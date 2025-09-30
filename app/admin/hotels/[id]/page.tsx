@@ -21,6 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { useConfirm } from '@/contexts/confirmation';
 import Loader from '@/components/loader'
 import { removeRoom } from '@/supabase/bookings';
+import TextLoader from "@/components/textLoader"
 
 interface RoomImage {
   id: string;
@@ -69,6 +70,7 @@ export default function page({params}:{params : Promise<Params>}) {
     to: undefined,
   });
   const [loading, setLoading] = useState(true)
+  const [btnLoading, setBtnLoading] = useState(false)
   const [dateLoading, setDateLoading] = useState(true)
 
   const {getHotelRooms} = useHotels()
@@ -116,7 +118,7 @@ export default function page({params}:{params : Promise<Params>}) {
       toast.error('Please add at least one image');
       return;
     }
-
+    setBtnLoading(true)
     try{
       const {data, error} = await supabase
       .from('rooms')
@@ -182,6 +184,10 @@ export default function page({params}:{params : Promise<Params>}) {
       console.log(error);
       toast.error('Error saving hotel: ' + error.message);
     }
+    finally{
+      setBtnLoading(false)
+    }
+
   }
 
   const handleUpdateRoom = async (roomId: string) => {
@@ -193,7 +199,7 @@ export default function page({params}:{params : Promise<Params>}) {
       toast.error("Please add at least one image");
       return;
     }
-
+    setBtnLoading(true)
     try {
       const { error: updateError } = await supabase
         .from("rooms")
@@ -311,6 +317,9 @@ export default function page({params}:{params : Promise<Params>}) {
     } catch (error: any) {
       console.error(error.message);
       toast.error("Error updating room: " + error.message);
+    }
+    finally{
+      setBtnLoading(false)
     }
   };
 
@@ -896,7 +905,11 @@ export default function page({params}:{params : Promise<Params>}) {
                 if(!editingRoom){handleAddRoom()}
                 else{handleUpdateRoom(editingRoom.id)}
               }}>
-                {editingRoom ? 'Update' : 'Add'} Room
+                {
+                  editingRoom ? 
+                  <TextLoader text='Update Room' loading={btnLoading} /> : 
+                  <TextLoader text='Add Room' loading={btnLoading} />
+                }
               </Button>
             </div>
           </div>
