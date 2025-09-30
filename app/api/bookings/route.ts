@@ -101,8 +101,8 @@ export async function PATCH(req: Request){
             },
         ],
         mode: "payment",
-        success_url: `http://localhost:3000?payment=success`,
-        cancel_url: `http://localhost:3000?payment=failed`,
+        success_url: `${process.env.NEXT_PUBLIC_SITE_LINK}/success`,
+        cancel_url: `${process.env.NEXT_PUBLIC_SITE_LINK}/failed`,
         metadata: { bookingId: id },
         payment_intent_data: {
             metadata: { bookingId: id },
@@ -114,4 +114,5 @@ export async function PATCH(req: Request){
     catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
+
 }
