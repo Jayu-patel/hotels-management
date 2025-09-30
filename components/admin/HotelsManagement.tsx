@@ -20,6 +20,7 @@ import Image from 'next/image';
 import PaginationComponent from "@/components/pagination"
 import { useConfirm } from '@/contexts/confirmation';
 import { Country, State, City } from "country-state-city";
+import TextLoader from "@/components/textLoader"
 
 
 interface HotelImage {
@@ -87,6 +88,7 @@ export function HotelsManagement({amenityData = []} : props) {
   const [amenities, setAmenities] = useState<amenityType[] | null>(amenityData)
   const [amenitiesOptions, setAmenitiesOptions] = useState<{ label: string; value: string }[]>([])
   const [searchCityTerm, setSearchCityTerm] = useState("");
+  const [loading, setLoading] = useState(false)
   
   const confirm = useConfirm();
 
@@ -308,6 +310,7 @@ useEffect(() => {
       toast.error('Please add at least one image');
       return;
     }
+    setLoading(true)
     try {
       // 1️⃣ Insert or update hotel basic info
       const { data: hotelData, error: hotelError } = await supabase
@@ -381,6 +384,9 @@ useEffect(() => {
       console.log(error);
       toast.error('Error saving hotel: ' + error.message);
     }
+    finally{
+      setLoading(false)
+    }
   };
 
   const handleUpdateHotel = async (hotelId: string) => {
@@ -389,6 +395,7 @@ useEffect(() => {
       return;
     }
 
+    setLoading(true)
     try {
       // 1️⃣ Update hotel basic info
       const { error: updateError } = await supabase
@@ -509,6 +516,9 @@ useEffect(() => {
     } catch (error: any) {
       console.error(error.message);
       toast.error("Error updating hotel: " + error.message);
+    }
+    finally{
+      setLoading(false)
     }
   };
 
@@ -1098,7 +1108,12 @@ useEffect(() => {
                   }}
                   className="flex-1"
                 >
-                  {editingHotel ? "Update" : "Add"} Hotel
+
+                  {
+                    editingHotel ? 
+                   <TextLoader text='Update Hotel' loading={loading} /> : 
+                   <TextLoader text='Add Hotel' loading={loading} />
+                  }
                 </Button>
               </div>
             </div>
