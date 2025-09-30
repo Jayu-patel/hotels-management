@@ -132,10 +132,9 @@ export async function POST(req: NextRequest) {
       `,
     });
 
-    // await supabase.auth.signInWithPassword({email: "gitemail21@gmail.com", password: "testadmin1"})
-
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message });
   }
+
 }
