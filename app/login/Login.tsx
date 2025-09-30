@@ -1,190 +1,3 @@
-// 'use client';
-
-// import React, { useState } from 'react';
-// import { Button } from '@/components/ui/button';
-// import { Input } from '@/components/ui/input';
-// import { Label } from '@/components/ui/label';
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import { Hotel, User } from 'lucide-react';
-// import { login, signUp } from '@/supabase/auth';
-// import { toast } from 'sonner';
-// import { useRouter } from 'next/navigation';
-
-// interface LoginPageProps {
-//   onAuthSuccess?: () => void;
-// }
-
-// export function LoginPage({ onAuthSuccess }: LoginPageProps) {
-//   const [loginEmail, setLoginEmail] = useState('');
-//   const [loginPassword, setLoginPassword] = useState('');
-//   const [signupEmail, setSignupEmail] = useState('');
-//   const [signupPassword, setSignupPassword] = useState('');
-//   const [signupName, setSignupName] = useState('');
-//   const [error, setError] = useState('');
-//   const [loading, setLoading] = useState(false);
-//   const router = useRouter()
-  
-//   const handleLogin = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     setError('');
-//     setLoading(true);
-    
-//     try {
-//       const {data} = await login(loginEmail, loginPassword);
-//       if(data){
-//         // router.push("/")
-//         if(document)
-//         if (typeof window !== "undefined" && window.location) {
-//           window.location.reload();
-//         }
-//       }
-//     } 
-//     catch (err: any) {
-//       setError('Invalid email or password');
-//       toast(err)
-//     } 
-//     finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleSignup = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     setError('');
-//     setLoading(true);
-    
-//     try {
-//       const {data} = await signUp(signupEmail, signupPassword, signupName, "user");
-//       if (onAuthSuccess) {
-//         onAuthSuccess();
-//       }
-//     } catch (err: any) {
-//       setError('Failed to create account');
-//       toast(err)
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const fillDemoCredentials = (type: 'user' | 'admin') => {
-//     if (type === 'admin') {
-//       setLoginEmail('admin@hotel.com');
-//       setLoginPassword('admin123');
-//     } else {
-//       setLoginEmail('user@test.com');
-//       setLoginPassword('user123');
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-//       <div className="w-full max-w-md">
-//         <Card>
-//           <CardHeader>
-//             <CardTitle>Access Your Account</CardTitle>
-//             <CardDescription>
-//               Login to your account or create a new one
-//             </CardDescription>
-//           </CardHeader>
-//           <CardContent>
-//             <Tabs defaultValue="login" className="w-full">
-//               <TabsList className="grid w-full grid-cols-2">
-//                 <TabsTrigger value="login">Login</TabsTrigger>
-//                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
-//               </TabsList>
-              
-//               <TabsContent value="login">
-//                 <form onSubmit={handleLogin} className="space-y-4">
-//                   <div className="space-y-2">
-//                     <Label htmlFor="email">Email</Label>
-//                     <Input
-//                       id="email"
-//                       type="email"
-//                       value={loginEmail}
-//                       onChange={(e) => setLoginEmail(e.target.value)}
-//                       required
-//                     />
-//                   </div>
-//                   <div className="space-y-2">
-//                     <Label htmlFor="password">Password</Label>
-//                     <Input
-//                       id="password"
-//                       type="password"
-//                       value={loginPassword}
-//                       onChange={(e) => setLoginPassword(e.target.value)}
-//                       required
-//                     />
-//                   </div>
-                  
-//                   {error && (
-//                     <div className="text-red-600 text-sm">{error}</div>
-//                   )}
-                  
-//                   <Button 
-//                     type="submit" 
-//                     className="w-full cursor-pointer" 
-//                     disabled={loading}
-//                   >
-//                     {loading ? 'Signing in...' : 'Sign In'}
-//                   </Button>
-//                 </form>
-//               </TabsContent>
-              
-//               <TabsContent value="signup">
-//                 <form onSubmit={handleSignup} className="space-y-4">
-//                   <div className="space-y-2">
-//                     <Label htmlFor="signup-name">Full Name</Label>
-//                     <Input
-//                       id="signup-name"
-//                       type="text"
-//                       value={signupName}
-//                       onChange={(e) => setSignupName(e.target.value)}
-//                       required
-//                     />
-//                   </div>
-//                   <div className="space-y-2">
-//                     <Label htmlFor="signup-email">Email</Label>
-//                     <Input
-//                       id="signup-email"
-//                       type="email"
-//                       value={signupEmail}
-//                       onChange={(e) => setSignupEmail(e.target.value)}
-//                       required
-//                     />
-//                   </div>
-//                   <div className="space-y-2">
-//                     <Label htmlFor="signup-password">Password</Label>
-//                     <Input
-//                       id="signup-password"
-//                       type="password"
-//                       value={signupPassword}
-//                       onChange={(e) => setSignupPassword(e.target.value)}
-//                       required
-//                     />
-//                   </div>
-                  
-//                   {error && (
-//                     <div className="text-red-600 text-sm">{error}</div>
-//                   )}
-                  
-//                   <Button 
-//                     type="submit" 
-//                     className="w-full" 
-//                     disabled={loading}
-//                   >
-//                     {loading ? 'Creating account...' : 'Create Account'}
-//                   </Button>
-//                 </form>
-//               </TabsContent>
-//             </Tabs>
-//           </CardContent>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// }
-
 'use client';
 
 import React, { useState } from 'react';
@@ -293,7 +106,7 @@ export function LoginPage({ onAuthSuccess }: LoginPageProps) {
 
               {/* Login Form */}
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
                     <Input
@@ -325,15 +138,15 @@ export function LoginPage({ onAuthSuccess }: LoginPageProps) {
                     </div>
                     {loginErrors.password && <p className="text-red-600 text-sm">{loginErrors.password}</p>}
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button onClick={handleLogin} className="w-full" disabled={loading}>
                     {loading ? 'Signing in...' : 'Sign In'}
                   </Button>
-                </form>
+                </div>
               </TabsContent>
 
               {/* Signup Form */}
               <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
                     <Input
@@ -399,10 +212,10 @@ export function LoginPage({ onAuthSuccess }: LoginPageProps) {
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button onClick={handleSignup} className="w-full" disabled={loading}>
                     {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
-                </form>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
