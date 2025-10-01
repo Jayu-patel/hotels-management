@@ -11,13 +11,9 @@ export async function signUp(email: string, password: string, full_name: string,
   );
   if(!error){
       const {user} = data
-      console.log(user)
       const { error: profileError } = await supabase.from("profiles").update({email, full_name, role}).eq("id", user?.id);
 
       if (profileError) throw profileError.message;
-      else{
-        console.log("profile edited")
-      }
   }
   else{
     throw error.message

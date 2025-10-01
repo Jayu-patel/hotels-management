@@ -1,5 +1,44 @@
 import {supabase} from "@/lib/supabase/client"
 
+interface BookingFromDB {
+  id: string;
+  check_in: string;
+  check_out: string;
+  created_at: string;
+  updated_at: string;
+  guest_count: number;
+  payment_status: string;
+  room_booked: number;
+  status: string;
+  total_amount: number;
+  user_id: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  hotel_id: {
+    id: string;
+    name: string;
+  };
+  rooms: Array<{ id: string; name: string }>;
+}
+
+interface BookingMapped {
+  id: string;
+  check_in: Date;
+  check_out: Date;
+  created_at: Date;
+  updated_at: Date;
+  guest_count: number;
+  payment_status: string;
+  room_booked: number;
+  status: string;
+  total_amount: number;
+  users: BookingFromDB["user_id"];
+  hotels: BookingFromDB["hotel_id"];
+  rooms: BookingFromDB["rooms"];
+}
+
 export async function getAllBookings({
   page = 1,
   size = 4,
@@ -12,14 +51,11 @@ export async function getAllBookings({
   searchTerm?: string;
   statusFilter?: string;
   paymentFilter?: string;
-}): Promise<{ bookings: any; totalPages: number }> {
-  const from = (page - 1) * size;
-  const to = from + size - 1;
-
-  let query = supabase
+}): Promise<{ bookings: any[]; totalPages: number }> {
+  // Fetch all rows (without range)
+  const { data, error } = await supabase
     .from("bookings")
-    .select(
-      `
+    .select(`
       id,
       check_in,
       check_out,
@@ -33,34 +69,41 @@ export async function getAllBookings({
       user_id!inner(id, full_name, email),
       hotel_id!inner(id, name),
       rooms:room_id (id, name)
-    `,
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  // if (searchTerm && searchTerm.trim() !== "") {
-  //   query = query.or(
-  //     `user_id->>full_name.ilike.%${searchTerm}%,user_id->>email.ilike.%${searchTerm}%,hotel_id->>name.ilike.%${searchTerm}%`
-  //   );
-  // }
-
-  if (statusFilter && statusFilter !== "All") {
-    query = query.eq("status", statusFilter);
-  }
-
-  // ✅ Apply payment filter
-  if (paymentFilter && paymentFilter !== "All") {
-    query = query.eq("payment_status", paymentFilter);
-  }
-
-  const { data, error, count } = await query;
+    `);
 
   if (error) throw error;
 
-  const totalPages = Math.ceil((count ?? 0) / size);
+  let bookings = (data ?? []) as any[];
 
-  const bookings = (data ?? []).map((b) => ({
+  // Filter top-level columns
+  if (statusFilter && statusFilter !== "All") {
+    bookings = bookings.filter(b => b.status === statusFilter);
+  }
+  if (paymentFilter && paymentFilter !== "All") {
+    bookings = bookings.filter(b => b.payment_status === paymentFilter);
+  }
+
+  // Filter nested columns by searchTerm
+  if (searchTerm && searchTerm.trim() !== "") {
+    const term = searchTerm.toLowerCase();
+    bookings = bookings.filter(
+      (b) =>
+        b.user_id.full_name.toLowerCase().includes(term) ||
+        b.user_id.email.toLowerCase().includes(term) ||
+        b.hotel_id.name.toLowerCase().includes(term)
+    );
+  }
+
+  // Calculate total pages after filtering
+  const totalPages = Math.ceil(bookings.length / size);
+
+  // Apply pagination in JS
+  const from = (page - 1) * size;
+  const to = from + size;
+  const paginatedBookings = bookings.slice(from, to);
+
+  // Map final structure
+  const mappedBookings: BookingMapped[] = paginatedBookings.map((b) => ({
     id: b.id,
     check_in: new Date(b.check_in),
     check_out: new Date(b.check_out),
@@ -76,9 +119,8 @@ export async function getAllBookings({
     rooms: b.rooms,
   }));
 
-  return { bookings, totalPages };
+  return { bookings: mappedBookings as any[], totalPages };
 }
-
 
 export async function getBookingsById(id: string){
   const { data, error } = await supabase

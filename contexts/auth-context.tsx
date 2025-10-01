@@ -53,7 +53,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if(user){
         const { data } = await supabase.from("profiles").select("*").eq("id", user?.id).single();
         setUser(data)
-        console.log(data)
       }
     }
   }
