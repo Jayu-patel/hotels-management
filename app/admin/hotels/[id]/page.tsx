@@ -181,7 +181,6 @@ export default function page({params}:{params : Promise<Params>}) {
       setIsRoomDialogOpen(false)
     }
     catch (error: any) {
-      console.log(error);
       toast.error('Error saving hotel: ' + error.message);
     }
     finally{
@@ -445,7 +444,6 @@ export default function page({params}:{params : Promise<Params>}) {
       refreshIfComplete();
     })
     .subscribe((status) => {
-      console.log("Realtime channel status:", status)
     });
 
     return () => {
@@ -460,7 +458,6 @@ export default function page({params}:{params : Promise<Params>}) {
         const {rooms, name} = await getHotelRooms(id, dateRange?.from?.toLocaleDateString(), dateRange?.to?.toLocaleDateString())
         if(rooms){setRooms(rooms)}
         if(name) setHotelName(name)
-        console.log(rooms)
       }
       catch(err: any){
         toast.error(err.message)
@@ -500,7 +497,6 @@ export default function page({params}:{params : Promise<Params>}) {
     if(amenities){
       setAmenitiesOptions(amenities.map((a: amenityType) => ({ label: a.name, value: a.id })))
     }
-    if(amenitiesOptions) console.log(amenitiesOptions)
   },[amenities])
 
   useEffect(()=>{

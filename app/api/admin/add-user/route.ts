@@ -1,7 +1,6 @@
 // @ts-ignore
 import nodemailer from "nodemailer";
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest) {
@@ -21,13 +20,9 @@ export async function POST(req: NextRequest) {
       );
       if(!error){
           const {user} = data
-          console.log(user)
           const { error: profileError } = await supabase.from("profiles").update({email, full_name, role}).eq("id", user?.id);
     
           if (profileError) throw profileError.message;
-          else{
-            console.log("profile edited")
-          }
       }
       else{
         throw error.message
@@ -132,9 +127,8 @@ export async function POST(req: NextRequest) {
       `,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, {status: 200});
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message });
   }
-
 }

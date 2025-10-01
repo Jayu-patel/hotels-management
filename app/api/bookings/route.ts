@@ -114,5 +114,4 @@ export async function PATCH(req: Request){
     catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
-
 }

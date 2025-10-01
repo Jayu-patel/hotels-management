@@ -35,27 +35,6 @@ export async function POST(req: Request) {
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // if (event.type === "checkout.session.completed") {
-  //   const session = event.data.object as Stripe.Checkout.Session;
-  //   const bookingId = session.metadata?.bookingId;
-
-  //   if (bookingId) {
-  //     await supabase
-  //       .from("bookings")
-  //       .update({
-  //         payment_status: "Paid",
-  //         transaction_id: session.payment_intent as string,
-  //         amount_paid: (session.amount_total ?? 0) / 100,
-  //       })
-  //       .eq("id", bookingId);
-
-  //     console.log("Payment", session)
-  //     console.log("booking id", bookingId) //undefined here
-  //   } else {
-  //     console.warn("⚠️ No bookingId found in metadata!");
-  //   }
-  // }
-
   if (event.type === "payment_intent.succeeded") {
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
     const bookingId = paymentIntent.metadata.bookingId;
@@ -98,7 +77,6 @@ export async function POST(req: Request) {
         })
         .eq("id", bookingId);
 
-      console.log("❌ Charge failed for booking:", bookingId);
     }
   }
 

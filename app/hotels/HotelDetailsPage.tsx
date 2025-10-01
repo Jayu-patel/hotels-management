@@ -90,7 +90,6 @@ export default function HotelDetailsPage({ hotel, rooms }: HotelDetailsPageProps
   };
 
   const handleRoomSelect = (room: Room) => {
-    console.log("user", user)
     if (!user) {
       toast.warn("Login required to book a room.");
       return
@@ -103,9 +102,6 @@ export default function HotelDetailsPage({ hotel, rooms }: HotelDetailsPageProps
 
   };
 
-  useEffect(()=>{
-    console.log(user)
-  },[user])
 
   return (
     <div>

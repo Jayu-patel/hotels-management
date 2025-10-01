@@ -173,7 +173,6 @@ useEffect(() => {
         checkOut
       );
       setAvailableRooms(available);
-      console.log(available)
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -190,8 +189,6 @@ useEffect(()=>{
   let nextDate = new Date(today);
   nextDate.setDate(today.getDate() + 6);
 
-  console.log("range--", dateRange)
-  console.log("range2-", {today, nextDate})
 },[dateRange])
 
 

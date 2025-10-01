@@ -97,10 +97,6 @@ export default function HotelsPage({ onHotelSelect, onLoginRequired }: HotelsPag
   const handleHotelClick = (hotel: Hotel) => {
     onLoginRequired();
   };
-
-  useEffect(()=>{
-    console.log("search hotels...",hotels)
-  },[hotels])
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

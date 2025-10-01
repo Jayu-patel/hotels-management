@@ -77,7 +77,6 @@ const generateBookingDetails = (booking: Booking) => {
 
 export function BookingDetailsModal({ booking, isOpen, onClose, onCancel }: BookingDetailsModalProps) {
   if (!booking) return null;
-  console.log("lol",booking)
   const details = generateBookingDetails(booking);
 
   const getStatusColor = (status: Booking['status']) => {

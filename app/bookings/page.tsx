@@ -167,7 +167,6 @@ export default function MyBookingsPage() {
       toast.success("Booking cancelled successfully")
     }
     catch(err: any){
-      console.log("error: ", err.message)
       toast.error(err.message)
     }
     finally{
@@ -185,7 +184,6 @@ export default function MyBookingsPage() {
     }
     catch(err: any){
       toast.error("Booking failed")
-      console.log(err)
     }
     finally{
       setBookLoading(false)
@@ -207,10 +205,8 @@ export default function MyBookingsPage() {
     channel
     .on("postgres_changes", {event: "UPDATE", schema: "public", table: "bookings", filter: `user_id=eq.${user?.id}`}, (payload)=>{
       getAllUserBookings()
-      console.log(payload)
     })
     .subscribe((status) => {
-      console.log("Realtime channel status:", status)
     });
     
     return () => {

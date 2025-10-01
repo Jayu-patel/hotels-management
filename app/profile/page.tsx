@@ -191,15 +191,11 @@ export default function ProfilePage() {
   };
 
   function formatToMonthYear(dateString: string) {
-    if(dateString){
-        const date = new Date(dateString);
-        return date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        if(dateString){
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        }
     }
-    }
-
-  useEffect(()=>{
-    console.log(user)
-  },[user])
 
   return (
     <div>
