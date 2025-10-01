@@ -69,7 +69,8 @@ export async function getAllBookings({
       user_id!inner(id, full_name, email),
       hotel_id!inner(id, name),
       rooms:room_id (id, name)
-    `);
+    `)
+  .order("created_at", { ascending: false })
 
   if (error) throw error;
 
@@ -367,3 +368,4 @@ export async function removeRoom(id: string){
   
   return {data}
 }
+
