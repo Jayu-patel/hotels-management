@@ -141,10 +141,8 @@ export function BookingsManagement() {
 
     try{
       const {data} = await updateBookings(bookingId, newStatus)
-      console.log("data: ",data)
     }
     catch(err: any){
-      console.log("error: ", err.message)
       toast.error(err.message)
     }
     finally{
@@ -220,7 +218,7 @@ export function BookingsManagement() {
   useEffect(()=>{
       commonFetch(1,4);
       setPage(1)
-  },[statusFilter, paymentFilter])
+  },[statusFilter, paymentFilter, search]) // add search filter here
 
   useEffect(() => {
     commonFetch(page,4);
@@ -239,33 +237,6 @@ export function BookingsManagement() {
       const updatedBookingId = payload.new?.id || payload.old?.id;
       if (!updatedBookingId) return;
 
-      // try{
-      //   const booking =
-      //     payload.eventType === "DELETE"
-      //       ? payload.old
-      //       : (await getBookingsById(updatedBookingId)).booking;
-          
-      //     console.log("single book", booking)
-      //     console.log("all book", bookings)
-
-      //     if (payload.eventType === "INSERT") {
-      //       await commonFetch(page,4)
-      //       toast.success(`New booking ${booking.id} added!`);
-      //     } 
-      //     else if (payload.eventType === "UPDATE") {
-      //       await commonFetch(page,4)
-      //       toast.info(`Booking ${booking.id} updated to ${booking.status}!`);
-      //     } 
-      //     else if (payload.eventType === "DELETE") {
-      //       await commonFetch(page,4)
-      //       toast.warn(`Booking ${booking.id} has been deleted!`);
-      //     }
-
-      //   getBookingSatistic()
-      // }
-      // catch(err: any){
-      //   toast.error(err.message)
-      // }
     try {
       const updatedBookingId = payload.new?.id || payload.old?.id;
       if (!updatedBookingId) return;
@@ -277,9 +248,6 @@ export function BookingsManagement() {
       } else {
         booking = (await getBookingsById(updatedBookingId)).booking;
       }
-
-      console.log("single booking:", booking);
-      console.log("all bookings before update:", bookings);
 
       if (payload.eventType === "INSERT") {
         setBookings((prev: any) => [booking, ...prev]);
@@ -303,7 +271,6 @@ export function BookingsManagement() {
 
     })
     .subscribe((status) => {
-      console.log("Realtime channel status:", status)
     })
     
     return () => {

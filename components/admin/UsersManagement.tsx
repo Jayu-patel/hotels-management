@@ -98,7 +98,6 @@ export function UsersManagement() {
       fetchUsers()
     })
     .subscribe((status) => {
-      console.log("Realtime channel status:", status)
     });
 
     return () => {

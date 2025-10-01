@@ -4,17 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, MapPin, Users, Search, Star, Wifi, Car, Coffee, Dumbbell, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useHotels } from "@/contexts/hotels-context";
 import { getHotels } from "@/supabase/hotels";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import ResponsiveSkeleton from '@/components/responsiveSkeleton';
+import { supabase } from "@/lib/supabase/client";
 
 interface SearchCriteria {
   destination: string;
@@ -36,33 +35,6 @@ interface GuestCount {
   infants: number;
 }
 
-const topDestinations = [
-  {
-    name: "New York",
-    hotels: "120+ hotels",
-    imageUrl:
-      "https://images.unsplash.com/photo-1634041441461-a1789d008830?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  },
-  {
-    name: "Miami",
-    hotels: "80+ hotels",
-    imageUrl:
-      "https://images.unsplash.com/photo-1678687114989-ad452a24f289?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  },
-  {
-    name: "Aspen",
-    hotels: "45+ hotels",
-    imageUrl:
-      "https://images.unsplash.com/photo-1689729830276-6b8a3fe230f9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  },
-  {
-    name: "Las Vegas",
-    hotels: "200+ hotels",
-    imageUrl:
-      "https://images.unsplash.com/photo-1722409195473-d322e99621e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-  },
-];
-
 const amenityIcons: { [key: string]: React.ReactNode } = {
   "WiFi": <Wifi className="h-4 w-4" />,
   "Parking": <Car className="h-4 w-4" />,
@@ -80,6 +52,10 @@ export default function HomePage() {
     children: 0,
     infants: 0,
   });
+
+  const [allDestinations, setAllDestinations] = useState<string[]>([]);
+  const [filteredDestinations, setFilteredDestinations] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const [featuredHotels, setFeaturedHotels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true)
@@ -147,6 +123,39 @@ export default function HomePage() {
     router.push(`/search?destination=${destination}&checkIn=${checkIn?.toISOString()}&checkOut=${checkOut?.toISOString()}&adults=${guest.adults}&children=${guest.children}&infants=${guest.infants}`);
   };
 
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      const { data, error } = await supabase
+        .from("hotels")
+        .select("destination")
+        .neq("destination", null);
+
+      if (!error && data) {
+        const uniqueDestinations = Array.from(
+          new Set(data.map((d: any) => d.destination))
+        );
+        setAllDestinations(uniqueDestinations);
+        setFilteredDestinations(uniqueDestinations);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
+
+  // Filter destinations as user types
+  useEffect(() => {
+    if (destination.trim() === "") {
+      setFilteredDestinations(allDestinations);
+      return;
+    }
+
+    const term = destination.toLowerCase();
+    setFilteredDestinations(
+      allDestinations.filter((d) => d.toLowerCase().includes(term))
+    );
+  }, [destination, allDestinations]);
+
+
   return (
     <div className="space-y-16">
       {/* Hero Section */}
@@ -183,9 +192,36 @@ export default function HomePage() {
                   <Input
                     placeholder="Where are you going?"
                     value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    onChange={(e) => {
+                      setDestination(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     required
                   />
+                  {showSuggestions && (
+                    <ul className="absolute z-10 w-[50%] bg-white border border-gray-200 mt-1 rounded shadow-lg max-h-60 overflow-auto">
+                      {filteredDestinations.length > 0 ? (
+                        filteredDestinations.map((d, index) => (
+                          <li
+                            key={index}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={() => { // prevent blur before click
+                              setDestination(d);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            {d}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="px-4 py-2 text-gray-500 cursor-default">
+                          No destination found
+                        </li>
+                      )}
+                    </ul>
+                  )}
                   {errors.destination && (
                     <p className="text-xs text-red-500">{errors.destination}</p>
                   )}

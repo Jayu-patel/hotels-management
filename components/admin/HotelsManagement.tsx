@@ -98,10 +98,6 @@ export function HotelsManagement({amenityData = []} : props) {
     }
   },[])
 
-  useEffect(()=>{
-    console.log("lol", adminHotels)
-  },[adminHotels])
-
   const [hotelForm, setHotelForm] = useState({
     name: '',
     location: '',
@@ -138,8 +134,8 @@ useEffect(() => {
   fetchHotels({ page: currentPage, itemsPerPage, searchTerm })
     .then(({ count }) => 
     setTotalCount(count))
-    .catch((e)=>{
-      console.log(e)
+    .catch((err: any)=>{
+      toast.error(err.message)
     })
 }, [currentPage, searchTerm, statusFilter]);
 
@@ -150,10 +146,9 @@ useEffect(() => {
 
     const refreshIfComplete = () => {
       if (hotelInserted == true && imagesInserted == true && amenitiesInserted == true) {
-        console.log("All related inserts detected — refreshing data...");
         fetchHotels({ page: currentPage, itemsPerPage, searchTerm })
           .then(({ count }) => setTotalCount(count))
-          .catch((err)=>{console.log(err)});
+          .catch((err)=>{toast.error(err.message)});
         hotelInserted = imagesInserted = amenitiesInserted = false; // reset for next insert
       }
     };
@@ -167,7 +162,7 @@ useEffect(() => {
     })
     .on("postgres_changes", { event: "DELETE", schema: "public", table: "hotels" }, (payload) => {
       setCurrentPage(1);
-      fetchHotels({ page: currentPage, itemsPerPage, searchTerm }).then(({ count }) => setTotalCount(count)).catch((e)=>{console.log(e)})
+      fetchHotels({ page: currentPage, itemsPerPage, searchTerm }).then(({ count }) => setTotalCount(count)).catch((e)=>{})
     })
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "hotel_images" }, (payload) => {
       imagesInserted = true;
@@ -190,7 +185,6 @@ useEffect(() => {
       refreshIfComplete();
     })
     .subscribe((status) => {
-      console.log("Realtime channel status:", status)
     });
 
     return () => {
@@ -381,7 +375,6 @@ useEffect(() => {
       toast.success('Hotel added successfully');
       setIsHotelDialogOpen(false);
     } catch (error: any) {
-      console.log(error);
       toast.error('Error saving hotel: ' + error.message);
     }
     finally{
@@ -638,7 +631,7 @@ useEffect(() => {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -647,7 +640,7 @@ useEffect(() => {
                 <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="Inactive">Inactive</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
           </div>
         </CardContent>
       </Card>

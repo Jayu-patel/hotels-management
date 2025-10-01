@@ -68,7 +68,6 @@ export function AddUserDialog({
   const handleSubmit =async() => {
     if (!validate()) return
     setLoading(true)
-    console.log("Adding user:", form)
     const to = form.email
     const subject = "Your New Account Has Been Created"
       axios.post("/api/admin/add-user", {
@@ -218,7 +217,6 @@ export function EditUserDialog({ user, open, onOpenChange }: { user: any, open: 
   const handleSubmit =async() => {
     if (!validate()) return
     setLoading(true)
-    console.log("Updating user:", form)
 
     try{
       const { error } = await supabase
