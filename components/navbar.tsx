@@ -3,14 +3,19 @@ import React, { useState } from 'react'
 import { Button } from './ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Hotel, User, Calendar, Settings, LogOut, LayoutDashboard, Search, Loader2 } from 'lucide-react';
+import { User, Calendar, LogOut, LayoutDashboard, Loader2 } from 'lucide-react';
 import Link from 'next/link'
 import { useAuth } from '@/contexts/auth-context';
 import { useConfirm } from '@/contexts/confirmation';
 import { toast } from 'react-toastify';
+import {CurrencySelector} from '@/components/currencySelector'
+import { useCurrency } from '@/contexts/currency-context';
+
+type Currency = "usd" | "inr";
 
 export default function navbar() {
   const { user, logout } = useAuth();
+  const {setCurrency} = useCurrency()
   const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const getInitials = (name: string) => {
@@ -46,27 +51,17 @@ export default function navbar() {
           <Link href={"/"} className='text-2xl font-bold cursor-pointer'>HotelBook</Link>
         </div>
 
-        {/* <nav className="hidden md:flex items-center gap-8">
-            <Link href={"/"}>Home</Link>
-            <Link href={"/hotels"}>Hotels</Link>
-            <Link href={"/bookings"} prefetch={true}>My Bookings</Link>
-        </nav> */}
-
         <div className="flex items-center gap-4">
-          {/* <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-            <Search className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-            <User className="h-5 w-5" />
-          </Button> */}
-          {/* <Link href={"/login"} className='text-sm px-4 py-2 rounded-md bg-white text-gray-900 hover:bg-gray-100'>Login</Link> */}
           <div className="flex items-center gap-4">
             {!user ? (
-              <Button>
+              <>
                 <Link prefetch href={"/login"}>
-                  Login
+                  <Button className='cursor-pointer'>
+                    Login
+                  </Button>
                 </Link>
-              </Button>
+                <CurrencySelector onCurrencyChange={(val)=>{setCurrency(val as Currency)}} />
+              </>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -88,20 +83,20 @@ export default function navbar() {
                   </div>
                   <DropdownMenuSeparator />
                   
-                  <DropdownMenuItem>
-                    <Link href={"/profile"} className='flex gap-3 w-full h-full'>
+                  <Link href={"/profile"} className='flex gap-3 w-full h-full'>
+                    <DropdownMenuItem className='w-full cursor-pointer'>
                       <User className="mr-2 h-4 w-4" />
                       Profile
-                    </Link>
-                  </DropdownMenuItem>
+                    </DropdownMenuItem>
+                  </Link>
                   
                   {user.role !== 'admin' && (
-                    <DropdownMenuItem>
-                      <Link href={"/bookings"} className='flex gap-3 w-full h-full'>
+                    <Link href={"/bookings"} className='flex gap-3 w-full h-full'>
+                      <DropdownMenuItem className='w-full cursor-pointer'>
                         <Calendar className="mr-2 h-4 w-4" />
                         My Bookings
-                      </Link>
-                    </DropdownMenuItem>
+                      </DropdownMenuItem>
+                    </Link>
                   )}
                   
                   {user.role === 'admin' && (
@@ -122,6 +117,7 @@ export default function navbar() {
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
+                <CurrencySelector onCurrencyChange={(val)=>{setCurrency(val as Currency)}} />
               </DropdownMenu>
             )}
           </div>

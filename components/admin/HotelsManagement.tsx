@@ -21,7 +21,8 @@ import PaginationComponent from "@/components/pagination"
 import { useConfirm } from '@/contexts/confirmation';
 import { Country, State, City } from "country-state-city";
 import TextLoader from "@/components/textLoader"
-
+import ViewToggleButton from "@/components/ui/view-toggle-button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface HotelImage {
   id: string;
@@ -83,12 +84,14 @@ export function HotelsManagement({amenityData = []} : props) {
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const itemsPerPage = 3;
+  const [itemsPerPage, setItemsPerPage] = useState(8)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [amenities, setAmenities] = useState<amenityType[] | null>(amenityData)
   const [amenitiesOptions, setAmenitiesOptions] = useState<{ label: string; value: string }[]>([])
   const [searchCityTerm, setSearchCityTerm] = useState("");
   const [loading, setLoading] = useState(false)
+  const [view, setView] = useState<"grid" | "list">("list")
+  const [totalPages, setTotalPages] = useState(1)
   
   const confirm = useConfirm();
 
@@ -108,23 +111,25 @@ export function HotelsManagement({amenityData = []} : props) {
     // roomTypes: [] as RoomType[],
   });
 
-  // const filteredHotels = hotels.filter((hotel) => {
-  //   const matchesSearch = 
-  //     hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     hotel.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-  //   const matchesStatus = statusFilter === 'All' || hotel.status === statusFilter;
-    
-  //   return matchesSearch && matchesStatus;
-  // });
+  useEffect(()=>{
+    let num = Math.ceil(totalCount / itemsPerPage);
+    setTotalPages(num)
+  },[totalCount, itemsPerPage])
 
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
-  // const startIndex = (currentPage - 1) * itemsPerPage;
-  // const paginatedHotels = filteredHotels.slice(startIndex, startIndex + itemsPerPage);
+const handlePageChange = (page: number) => {
+  setCurrentPage(page);
+};
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+const onToggleView=(view: "grid" | "list")=>{
+  setCurrentPage(1)
+  if(view == "grid"){
+    setItemsPerPage(3)
+  }
+  else{
+    setItemsPerPage(8)
+  }
+  setView(view)
+}
 
 useEffect(() => {
     setCurrentPage(1);
@@ -137,7 +142,7 @@ useEffect(() => {
     .catch((err: any)=>{
       toast.error(err.message)
     })
-}, [currentPage, searchTerm, statusFilter]);
+}, [currentPage, searchTerm, statusFilter, itemsPerPage]);
 
   useEffect(() => {
     let hotelInserted = false;
@@ -609,10 +614,10 @@ useEffect(() => {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[90vw] sm:max-w-[100vw]">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl">Hotels Management</h2>
-        <Button onClick={handleAddHotel}>
+        <Button onClick={handleAddHotel} className='cursor-pointer'>
           <Plus className="w-4 h-4 mr-2" />
           Add Hotel
         </Button>
@@ -631,140 +636,238 @@ useEffect(() => {
                 className="pl-10"
               />
             </div>
-            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Status</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select> */}
+
+            <ViewToggleButton onToggle={onToggleView} />
+
           </div>
         </CardContent>
       </Card>
 
       {/* Hotels Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {adminHotels.map((hotel) => (
-          <Card key={hotel.id} className="overflow-hidden">
-            <div className="aspect-video relative">
-              <div className="w-full h-full relative">
-                <Image
-                  fill
-                  src={`/api/image-proxy?url=${getPrimaryImage(hotel)}`}
-                  alt={hotel.name}
-                  className="object-cover"
-                />
-              </div>
-              <Badge
-                className="absolute top-2 right-2"
-                variant={hotel.status === "Active" ? "default" : "secondary"}
-              >
-                {hotel.status}
-              </Badge>
-              {hotel.images.length > 1 && (
-                <Badge className="absolute top-2 left-2 bg-black/50 text-white">
-                  <ImageIcon className="w-3 h-3 mr-1" />
-                  {hotel.images.length}
+      {
+        view == "grid" ?
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {adminHotels.map((hotel) => (
+            <Card key={hotel.id} className="overflow-hidden">
+              <div className="aspect-video relative">
+                <div className="w-full h-full relative">
+                  <Image
+                    fill
+                    src={`/api/image-proxy?url=${getPrimaryImage(hotel)}`}
+                    alt={hotel.name}
+                    className="object-cover"
+                  />
+                </div>
+                <Badge
+                  className="absolute top-2 right-2"
+                  variant={hotel.status === "Active" ? "default" : "secondary"}
+                >
+                  {hotel.status}
                 </Badge>
-              )}
-            </div>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="text-lg">{hotel.name}</h3>
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    {hotel.location}
+                {hotel.images.length > 1 && (
+                  <Badge className="absolute top-2 left-2 bg-black/50 text-white">
+                    <ImageIcon className="w-3 h-3 mr-1" />
+                    {hotel.images.length}
+                  </Badge>
+                )}
+              </div>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-lg">{hotel.name}</h3>
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4" />
+                      {hotel.location}
+                    </div>
+                    <div className="text-sm text-blue-600 mt-1">
+                      Destination: {hotel.destination}
+                    </div>
                   </div>
-                  <div className="text-sm text-blue-600 mt-1">
-                    Destination: {hotel.destination}
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    {hotel.rating}
-                  </div>
-                  {/* <span className="text-gray-600">{hotel.priceRange}</span> */}
-                </div>
+                  {/* <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      {hotel.rating}
+                    </div>
+                  </div> */}
 
-                {/* <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Bed className="w-4 h-4" />
-                    {hotel.totalRooms} rooms
-                  </div>
-                  <span className="text-green-600">{hotel.availableRooms} available</span>
-                </div> */}
+                  {/* <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Bed className="w-4 h-4" />
+                      {hotel.totalRooms} rooms
+                    </div>
+                    <span className="text-green-600">{hotel.availableRooms} available</span>
+                  </div> */}
 
-                {/* Room Types Display */}
-                {/* <div className="space-y-1">
-                  <div className="text-sm">Room Types:</div>
+                  {/* Room Types Display */}
+                  {/* <div className="space-y-1">
+                    <div className="text-sm">Room Types:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {hotel.roomTypes.map((roomType, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {roomType.type}: {roomType.count}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div> */}
+
                   <div className="flex flex-wrap gap-1">
-                    {hotel.roomTypes.map((roomType, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {roomType.type}: {roomType.count}
+                    {hotel.amenities
+                      .slice(0, 3)
+                      .map((amenity: { id: string; name: string }) => (
+                        <Badge
+                          key={amenity.id}
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          {amenity.name}
+                        </Badge>
+                      ))}
+                    {hotel.amenities.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{hotel.amenities.length - 3}
                       </Badge>
-                    ))}
+                    )}
                   </div>
-                </div> */}
 
-                <div className="flex flex-wrap gap-1">
-                  {hotel.amenities
-                    .slice(0, 3)
-                    .map((amenity: { id: string; name: string }) => (
-                      <Badge
-                        key={amenity.id}
-                        variant="secondary"
-                        className="text-xs"
+                  <div className="flex gap-2 pt-2">
+                    <Link href={`/admin/hotels/${hotel.id}`} className="flex-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full cursor-pointer"
                       >
-                        {amenity.name}
-                      </Badge>
-                    ))}
-                  {hotel.amenities.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{hotel.amenities.length - 3}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Link href={`/admin/hotels/${hotel.id}`} className="flex-1">
+                        <Bed className="w-4 h-4 mr-1" />
+                        Rooms
+                      </Button>
+                    </Link>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full cursor-pointer"
+                      className='cursor-pointer'
+                      onClick={() => handleEditHotel(hotel)}
                     >
-                      <Bed className="w-4 h-4 mr-1" />
-                      Rooms
+                      <Edit className="w-4 h-4" />
                     </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEditHotel(hotel)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDeleteHotel(hotel.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className='cursor-pointer'
+                      onClick={() => handleDeleteHotel(hotel.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div> :
+        <div className='overflow-x-scroll'>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Hotel</TableHead>
+                <TableHead>Destination</TableHead>
+                <TableHead>Country</TableHead>
+                <TableHead>Amenities</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {adminHotels?.map(hotel => (
+                <TableRow key={hotel.id}>
+                  <TableCell>
+                    <div className='flex items-center gap-3'>
+                      <div className="w-10 h-10 relative">
+                        <Image
+                          src={`/api/image-proxy?url=${getPrimaryImage(hotel)}`}
+                          alt={hotel.name}
+                          fill
+                          className="rounded-lg object-cover"
+                        />
+                      </div>
+                      <div className='text-sm'>{hotel.name}</div>
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div>
+                      <div className='text-sm'>{hotel.destination}</div>
+                      <div className="text-xs text-gray-500">{hotel.location}</div>
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div>
+                      <div className='text-sm'>{hotel.country}</div>
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div>
+                      <div className="flex flex-wrap gap-1">
+                        {hotel.amenities
+                          .slice(0, 3)
+                          .map((amenity: { id: string; name: string }) => (
+                            <Badge
+                              key={amenity.id}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {amenity.name}
+                            </Badge>
+                          ))}
+                        {hotel.amenities.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{hotel.amenities.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="flex gap-2 pt-2">
+                      <Link href={`/admin/hotels/${hotel.id}`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="cursor-pointer"
+                        >
+                          <Bed className="w-4 h-4 mr-1" />
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className='cursor-pointer'
+                        onClick={() => handleEditHotel(hotel)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className='cursor-pointer'
+                        onClick={() => handleDeleteHotel(hotel.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+
+
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      }
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages >= 1 && (
         <div className="flex justify-center">
           <PaginationComponent
             page={currentPage}

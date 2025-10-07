@@ -6,6 +6,7 @@ import { Hotel, Users, Calendar, DollarSign, TrendingUp, TrendingDown, IndianRup
 import { toast } from 'react-toastify';
 import { getAdminStats, getTopHotels } from '@/supabase/admin';
 import Loader from '@/components/loader'
+import { useCurrency } from '@/contexts/currency-context';
 
 // Mock data for charts
 // const revenueData = [
@@ -42,6 +43,7 @@ export function AdminDashboard() {
   const [totalUsers, setTotalUsers] = useState(0);
   const [topHotels, setTopHotels] = useState<TopHotel[]>([]);
   const [loading, setLoading] = useState(true)
+  const {currency, symbol, currencyConverter} = useCurrency()
 
   const stats = [
     {
@@ -67,10 +69,10 @@ export function AdminDashboard() {
     },
     {
       title: 'Monthly Revenue',
-      value: monthlyRevenue,
+      value: currencyConverter(monthlyRevenue),
       change: '+8.2%',
       changeType: 'positive' as const,
-      icon: DollarSign,
+      icon: currency == "usd" ? DollarSign : IndianRupee,
       // <IndianRupee />
     },
   ];
@@ -123,66 +125,6 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      {/* Charts Row */}
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue & Bookings Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value, name) => [
-                      name === 'revenue' ? `$${value.toLocaleString()}` : value,
-                      name === 'revenue' ? 'Revenue' : 'Bookings'
-                    ]}
-                  />
-                  <Bar dataKey="revenue" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Occupancy Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80 flex items-center justify-center">
-              <div className="text-center">
-                <ResponsiveContainer width={200} height={200}>
-                  <PieChart>
-                    <Pie
-                      data={occupancyData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      {occupancyData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`${value}%`, 'Occupancy']} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="mt-4">
-                  <p className="text-3xl text-blue-600">75%</p>
-                  <p className="text-sm text-gray-600">Current Occupancy</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div> */}
-
       {/* Top Performing Hotels */}
       <Card>
         <CardHeader>
@@ -202,7 +144,7 @@ export function AdminDashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-green-600">${hotel.revenue.toLocaleString()}</p>
+                  <p className="text-sm text-green-600">{symbol}{currencyConverter(hotel.revenue)}</p>
                   <p className="text-xs text-gray-600">Revenue</p>
                 </div>
               </div>
@@ -210,31 +152,7 @@ export function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Recent Activity */}
-      {/* <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[
-              { action: 'New booking', details: 'Grand Luxury Hotel - Executive Suite', time: '2 hours ago', type: 'booking' },
-              { action: 'Hotel added', details: 'Seaside Resort & Spa', time: '4 hours ago', type: 'hotel' },
-              { action: 'User registered', details: 'john.doe@email.com', time: '6 hours ago', type: 'user' },
-              { action: 'Booking cancelled', details: 'Boutique City Hotel - Standard Room', time: '8 hours ago', type: 'cancellation' },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center gap-4 p-3 border-l-4 border-blue-600 bg-blue-50">
-                <div className="flex-1">
-                  <p className="text-sm">{activity.action}</p>
-                  <p className="text-xs text-gray-600">{activity.details}</p>
-                </div>
-                <span className="text-xs text-gray-500">{activity.time}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card> */}
+      
     </div>
   );
 }

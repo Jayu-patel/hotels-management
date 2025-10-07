@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Search, Filter, User, UserCheck, UserX, Calendar, Plus } from 'lucide-react';
+import { Search, User, Calendar, Plus } from 'lucide-react';
 import { getAllUsers, userStatistic } from '@/supabase/users';
 import { toast } from 'react-toastify';
 import Loader from '@/components/loader'
 import PaginationComponent from '@/components/pagination'
 import {AddUserDialog, EditUserDialog } from './UserAction';
 import { supabase } from '@/lib/supabase/client';
+import { useCurrency } from '@/contexts/currency-context';
 
 
 interface User {
@@ -33,14 +33,11 @@ interface User {
 export function UsersManagement() {
   const [users, setUsers] = useState<User[] | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  // const [roleFilter, setRoleFilter] = useState('All');
-  // const [statusFilter, setStatusFilter] = useState('All');
+  const {currency, symbol, currencyConverter} = useCurrency()
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  // const [totalUsers, setTotalUserss] = useState(0)
   const [loading, setLoading] = useState(true)
   const [totalUsers, setTotalUsers] = useState<number>(0);
-  // const [totalGuests, setTotalGuests] = useState<number>(0);
   const [newUsersThisMonth, setNewUsersThisMonth] = useState<number>(0);
 
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -116,7 +113,7 @@ export function UsersManagement() {
   if(loading) 
   return <div className="flex justify-center items-center h-[calc(100vh-65px)]"> <Loader/> </div>
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[90vw] sm:max-w-[100vw]">
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
@@ -132,20 +129,6 @@ export function UsersManagement() {
             </div>
           </CardContent>
         </Card>
-
-        {/* <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Guests</p>
-                <p className="text-2xl">{totalGuests}</p>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <UserX className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card> */}
 
         <Card>
           <CardContent className="p-6">
@@ -184,29 +167,17 @@ export function UsersManagement() {
                 />
               </div>
             </div>
-            {/* <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Roles</SelectItem>
-                <SelectItem value="user">Users</SelectItem>
-                <SelectItem value="admin">Admins</SelectItem>
-              </SelectContent>
-            </Select> */}
           </div>
 
           {/* Users Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-scroll">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
-                  {/* <TableHead>Status</TableHead> */}
                   <TableHead>Bookings</TableHead>
                   <TableHead>Total Spent</TableHead>
-                  {/* <TableHead>Last Login</TableHead> */}
                   <TableHead>Joined</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -245,7 +216,7 @@ export function UsersManagement() {
                       </Badge>
                     </TableCell> */}
                     <TableCell>{user.totalBookings}</TableCell>
-                    <TableCell>${user.totalSpent.toLocaleString()}</TableCell>
+                    <TableCell>{symbol}{ currency == "usd" ? user.totalSpent.toLocaleString() : currencyConverter(user.totalSpent)}</TableCell>
                     {/* <TableCell>
                       <div className="text-sm">
                         {user.lastLogin.toLocaleDateString()}
