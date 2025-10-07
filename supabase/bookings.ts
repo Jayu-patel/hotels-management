@@ -66,11 +66,12 @@ export async function getAllBookings({
       room_booked,
       status,
       total_amount,
+      inr_amount,
       user_id!inner(id, full_name, email),
       hotel_id!inner(id, name),
       rooms:room_id (id, name)
     `)
-  .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false })
 
   if (error) throw error;
 
@@ -115,6 +116,7 @@ export async function getAllBookings({
     room_booked: b.room_booked,
     status: b.status,
     total_amount: b.total_amount,
+    inr_amount: b.inr_amount,
     users: b.user_id,
     hotels: b.hotel_id,
     rooms: b.rooms,
@@ -186,6 +188,7 @@ export async function getUserBookings(
       total_amount,
       payment_status,
       created_at,
+      inr_amount,
 
       hotel:hotel_id (
         id,
@@ -243,6 +246,7 @@ export async function getUserBookings(
         checkOut: new Date(b.check_out),
         guests: b.guest_count,
         totalAmount: b.total_amount,
+        inr_amount: b.inr_amount,
         status: b.status,
         paymentStatus: b.payment_status,
         bookingDate: new Date(b.created_at),
@@ -368,4 +372,3 @@ export async function removeRoom(id: string){
   
   return {data}
 }
-
