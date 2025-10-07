@@ -1,5 +1,5 @@
 "use client"
-import HotelsPage from "./HotelsClient";
+import HotelsPage from "../../components/search/HotelsClient";
 import Navbar from "@/components/navbar"
 
 export default function SearchPage() {

@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import React from "react"
-import HotelDetailsPage from "../HotelDetailsPage"
+import HotelDetailsPage from "@/components/hotels/HotelDetailsPage"
 
 interface Params{
   id?: string

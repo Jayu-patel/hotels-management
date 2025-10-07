@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Search, Calendar, MapPin, Users, DollarSign, Download, Eye } from 'lucide-react';
-import { BookingDetailsModal } from './BookingsDetailModal';
+import { BookingDetailsModal } from '@/components/bookings/BookingsDetailModal';
 import Navbar from '@/components/navbar'
 import Image from 'next/image';
 import { getUserBookings, updateBookings } from '@/supabase/bookings';
@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase/client';
 import axios from 'axios';
 import Loader from '@/components/loader'
 import PaginationComponent from '@/components/pagination';
+import { useCurrency } from '@/contexts/currency-context';
 
 interface Booking {
   id: string;
@@ -32,6 +33,7 @@ interface Booking {
   checkOut: Date;
   guests: number;
   totalAmount: number;
+  inr_amount: number;
   status: 'Confirmed' | 'Upcoming' | 'Completed' | 'Cancelled';
   paymentStatus: 'Paid' | 'Pending' | 'Refunded';
   bookingDate: Date;
@@ -56,6 +58,8 @@ export default function MyBookingsPage() {
   const [bookLoading, setBookLoading] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const { currency, symbol, rate, currencyConverter } = useCurrency();
 
   const filteredBookings = bookings?.filter((booking) => {
     const matchesSearch = 
@@ -178,7 +182,7 @@ export default function MyBookingsPage() {
   const payNow=async(bookingId: string)=>{
     setBookLoading(true)
     try{
-      const res = await axios.patch(`/api/bookings`, {id: bookingId})
+      const res = await axios.patch(`/api/bookings`, {id: bookingId, currency})
       const data = res.data
       if (data.url) window.location.href = data.url;
     }
@@ -383,7 +387,7 @@ export default function MyBookingsPage() {
 
                             <div className="text-right space-y-2">
                                 <div>
-                                <p className="text-2xl text-green-600">${booking.totalAmount.toLocaleString()}</p>
+                                <p className="text-2xl text-green-600">{symbol}{ currency == "usd" ? booking.totalAmount.toLocaleString() : booking.inr_amount}</p>
                                 <Badge variant={getPaymentStatusColor(booking.paymentStatus)} className="text-xs">
                                     {booking.paymentStatus}
                                 </Badge>

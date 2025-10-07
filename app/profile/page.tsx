@@ -13,7 +13,7 @@ import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Camera, Upload } fr
 import { toast } from 'react-toastify';
 import Navbar from '@/components/navbar'
 import { supabase } from '@/lib/supabase/client';
-import PasswordDialog from './ResetPassword';
+import PasswordDialog from '@/components/profile/ResetPassword';
 
 interface FormErrors {
   name?: string;
@@ -197,6 +197,18 @@ export default function ProfilePage() {
         }
     }
 
+    useEffect(() => {
+        if (user) {
+            setFormData({
+            name: user.full_name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            address: user.address || '',
+            dateOfBirth: user.dob || '',
+            });
+        }
+    }, [user]);
+
   return (
     <div>
         <Navbar/>
@@ -214,7 +226,14 @@ export default function ProfilePage() {
                 <Save className="h-4 w-4" />
                 Save Changes
                 </Button>
-                <Button variant="outline" onClick={handleCancel} className="flex items-center gap-2 cursor-pointer">
+                <Button 
+                    variant="outline" 
+                    onClick={()=>{
+                        setErrors({name: "", email: "", phone: "", dateOfBirth: ""});
+                        handleCancel();
+                    }} 
+                    className="flex items-center gap-2 cursor-pointer"
+                >
                 <X className="h-4 w-4" />
                 Cancel
                 </Button>
@@ -255,112 +274,112 @@ export default function ProfilePage() {
 
             {/* Profile Details */}
             <Card className="lg:col-span-2">
-            <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label htmlFor="name" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Full Name
+                <CardHeader>
+                    <CardTitle>Personal Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="name" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Full Name
+                        </Label>
+                        {isEditing ? (
+                        <>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+                            {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                        </>
+                        
+                        ) : (
+                        <p className="text-gray-900">{formData.name}</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="email" className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email Address
+                        </Label>
+                        {isEditing ? (
+                        <>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            />
+                            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+                        </>
+                        ) : (
+                        <p className="text-gray-900">{formData.email}</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="phone" className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Phone Number
+                        </Label>
+                        {isEditing ? (
+                        <>
+                            <Input
+                                id="phone"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            />
+                            {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
+                        </>
+                        ) : (
+                        <p className="text-gray-900">{formData.phone}</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="dateOfBirth" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                            Date of Birth
+                        </Label>
+                        {isEditing ? (
+                        <>
+                            <Input
+                                id="dateOfBirth"
+                                type="date"
+                                value={formData.dateOfBirth}
+                                // value={new Date(formData.dateOfBirth).toLocaleDateString("en-GB")}
+                                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                            />
+                            {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth}</p>}
+                        </>
+                        ) : (
+                            user?.dob ?
+                            <p className="text-gray-900">{new Date(formData.dateOfBirth).toLocaleDateString("en-GB")}</p> :
+                            <p className="text-gray-900">-</p>
+                        )}
+                    </div>
+                    </div>
+
+                    <div className="space-y-2">
+                    <Label htmlFor="address" className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Address
                     </Label>
                     {isEditing ? (
                     <>
                         <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         />
-                        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-                    </>
-                    
-                    ) : (
-                    <p className="text-gray-900">{formData.name}</p>
-                    )}
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="email" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email Address
-                    </Label>
-                    {isEditing ? (
-                    <>
-                        <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
-                        {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                     </>
                     ) : (
-                    <p className="text-gray-900">{formData.email}</p>
+                        <p className="text-gray-900">{formData.address}</p>
                     )}
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Phone Number
-                    </Label>
-                    {isEditing ? (
-                    <>
-                        <Input
-                            id="phone"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                        {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
-                    </>
-                    ) : (
-                    <p className="text-gray-900">{formData.phone}</p>
-                    )}
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth" className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                        Date of Birth
-                    </Label>
-                    {isEditing ? (
-                    <>
-                        <Input
-                            id="dateOfBirth"
-                            type="date"
-                            value={formData.dateOfBirth}
-                            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                        />
-                        {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth}</p>}
-                    </>
-                    ) : (
-                        user?.dob ?
-                        <p className="text-gray-900">{new Date(formData.dateOfBirth).toLocaleDateString("en-GB")}</p> :
-                        <p className="text-gray-900">-</p>
-                    )}
-                </div>
-                </div>
-
-                <div className="space-y-2">
-                <Label htmlFor="address" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Address
-                </Label>
-                {isEditing ? (
-                <>
-                    <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
-                    {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-                </>
-                ) : (
-                    <p className="text-gray-900">{formData.address}</p>
-                )}
-                </div>
-            </CardContent>
+                    </div>
+                </CardContent>
             </Card>
         </div>
 
@@ -495,8 +514,8 @@ export default function ProfilePage() {
                 <Button
                     variant="outline"
                     onClick={() => {
-                    setShowAvatarModal(false);
-                    setSelectedAvatar(null);
+                        setShowAvatarModal(false);
+                        setSelectedAvatar(null);
                     }}
                 >
                     Cancel

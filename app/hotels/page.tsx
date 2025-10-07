@@ -1,4 +1,4 @@
-import HotelsPage from "./HotelsClient";
+import HotelsPage from "@/components/hotels/HotelsClient";
 import Navbar from "@/components/navbar"
 
 export default function SearchPage() {
@@ -10,4 +10,5 @@ export default function SearchPage() {
       </div>
     </div>
   )
+  
 }

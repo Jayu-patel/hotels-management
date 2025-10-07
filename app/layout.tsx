@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { HotelsProvider } from "@/contexts/hotels-context"
 import {ToastContainer} from "react-toastify"
 import ConfirmProvider from "@/contexts/confirmation"
+import { CurrencyProvider } from "@/contexts/currency-context"
 
 // const spaceGrotesk = Space_Grotesk({
 //   subsets: ["latin"],
@@ -21,9 +22,12 @@ import ConfirmProvider from "@/contexts/confirmation"
 // })
 
 export const metadata: Metadata = {
-  title: "QuickStay - Discover Your Perfect Getaway Destination",
-  description: "Find and book luxury hotels and resorts worldwide. Start your journey today with QuickStay.",
-  generator: "v0.app",
+  title: "HotelBook - Discover Your Perfect Getaway Destination",
+  description: "Find and book luxury hotels and resorts worldwide. Start your journey today with HotelBook.",
+  generator: "figma",
+  icons: {
+    icon: "hotel-logo.svg"
+  }
 }
 
 export default function RootLayout({
@@ -37,11 +41,13 @@ export default function RootLayout({
         <ToastContainer/>
         <AuthProvider2>
           <AuthProvider>
-            <ConfirmProvider>
-              <HotelsProvider>
-                {children}
-              </HotelsProvider>
-            </ConfirmProvider>
+            <CurrencyProvider>
+              <ConfirmProvider>
+                <HotelsProvider>
+                  {children}
+                </HotelsProvider>
+              </ConfirmProvider>
+            </CurrencyProvider>
           </AuthProvider>
         </AuthProvider2>
       </body>

@@ -28,9 +28,10 @@ export async function POST(req: Request) {
       adults,
       children,
       infants,
+      inr_amount,
+      currency
     } = await req.json();
 
-    // 1️⃣ Create booking in Supabase with pending status
     const { data: booking, error } = await supabase
       .from("bookings")
       .insert([
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
           adults,
           children,
           infants,
+          inr_amount,
           payment_status: "Pending",
         },
       ])
@@ -54,14 +56,20 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
+    let amount = total_amount
+
+    if(currency == "inr"){
+      amount = inr_amount
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: `${currency}`,
             product_data: { name: "Hotel Room Booking" },
-            unit_amount: Math.round(total_amount * 100),
+            unit_amount: Math.round(amount * 100),
           },
           quantity: 1,
         },
@@ -83,19 +91,25 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request){
     try{
-        const {id} = await req.json()
+        const {id, currency} = await req.json()
 
-        const {data, error} = await supabase.from("bookings").select("total_amount").eq("id", id).single()
+        const {data, error} = await supabase.from("bookings").select("total_amount, inr_amount").eq("id", id).single()
         if (error) throw error;
+
+        let amount = data?.total_amount
+
+        if(currency == "inr"){
+          amount = data?.inr_amount
+        }
 
         const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         line_items: [
             {
             price_data: {
-                currency: "usd",
+                currency: `${currency}`,
                 product_data: { name: "Hotel Room Booking" },
-                unit_amount: Math.round(data?.total_amount * 100),
+                unit_amount: Math.round(amount * 100),
             },
             quantity: 1,
             },

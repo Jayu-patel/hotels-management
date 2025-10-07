@@ -512,36 +512,46 @@ export default function page({params}:{params : Promise<Params>}) {
   if(loading) 
   return <div className="flex justify-center items-center h-[calc(100vh-65px)]"> <Loader/> </div>
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Button variant="outline" onClick={() => {router.back()}}>
+    <div className="space-y-6 max-w-[90vw] mx-auto">
+      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between w-full">
+        {/* Left Section */}
+        <div className="flex flex-col sm:flex-col w-full sm:w-auto">
+          <Button variant="outline" onClick={() => router.back()} className="mb-2 sm:mb-0 w-[50%] cursor-pointer">
             ← Back to Hotels
           </Button>
-          {
-            hotelName ? 
+
+          {hotelName && (
             <>
-              <h2 className="text-2xl mt-2">Rooms - {hotelName}</h2>
-              <div className='mt-2'>
+              <h2 className="text-2xl">{`Rooms - ${hotelName}`}</h2>
+
+              <div className="mt-2 w-full sm:w-auto">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal h-12">
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto justify-start text-left font-normal h-12 cursor-pointer"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateRange?.from ? (
                         dateRange.to ? (
                           <>
-                            {dateRange.from.toLocaleDateString("en-GB")} - {dateRange.to.toLocaleDateString("en-GB")}
-                            {dateLoading ? <span className="ml-2 h-5 w-5 border-2 border-t-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></span> : <></>}
+                            {dateRange.from.toLocaleDateString("en-GB")} -{" "}
+                            {dateRange.to.toLocaleDateString("en-GB")}
+                            {dateLoading && (
+                              <span className="ml-2 h-5 w-5 border-2 border-t-2 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+                            )}
                           </>
                         ) : (
                           dateRange.from.toLocaleDateString("en-GB")
                         )
                       ) : (
-                        <span className="text-muted-foreground">Pick check-in and check-out dates</span>
+                        <span className="text-muted-foreground">
+                          Pick check-in and check-out dates
+                        </span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto max-w-[90vw] p-0" align="start">
                     <Calendar
                       initialFocus
                       mode="range"
@@ -549,43 +559,46 @@ export default function page({params}:{params : Promise<Params>}) {
                       selected={dateRange}
                       onSelect={setDateRange}
                       numberOfMonths={2}
-                      // disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
                       disabled={(date) => {
                         const today = new Date();
-                        today.setHours(0, 0, 0, 0); // reset time → 00:00:00
-
+                        today.setHours(0, 0, 0, 0);
                         return date < today || date < new Date("1900-01-01");
                       }}
-
                     />
                   </PopoverContent>
                 </Popover>
               </div>
-            </> : 
-            <></>
-          }
+            </>
+          )}
         </div>
-        <Button onClick={() => {
-          setEditingRoom(null);
-          setRoomForm({
-            name: '',
-            type: '',
-            capacity: 2,
-            price: 0,
-            amenities: [],
-            roomCount: 1,
-            images: [],
-            description: ''
-          });
-          setIsRoomDialogOpen(true);
-        }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Room
-        </Button>
+
+        {/* Right Section */}
+        <div className="mt-4 sm:mt-0 w-full sm:w-auto flex justify-start sm:justify-end">
+          <Button
+            onClick={() => {
+              setEditingRoom(null);
+              setRoomForm({
+                name: "",
+                type: "",
+                capacity: 2,
+                price: 0,
+                amenities: [],
+                roomCount: 1,
+                images: [],
+                description: "",
+              });
+              setIsRoomDialogOpen(true);
+            }}
+            className="w-full sm:w-auto flex justify-center sm:justify-start cursor-pointer"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Room
+          </Button>
+        </div>
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-scroll">
           <Table>
             <TableHeader>
               <TableRow>
