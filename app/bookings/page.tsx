@@ -59,7 +59,7 @@ export default function MyBookingsPage() {
   const [cancelLoading, setCancelLoading] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  const { currency, symbol, rate, currencyConverter } = useCurrency();
+  const { currency, symbol } = useCurrency();
 
   const filteredBookings = bookings?.filter((booking) => {
     const matchesSearch = 
@@ -150,9 +150,6 @@ export default function MyBookingsPage() {
     catch(err: any){
       toast.error(err.message)
     }
-    finally{
-      setLoading(false)
-    }
   }
 
   const cancelBooking=async(bookingId: string, newStatus: Booking['status'])=>{
@@ -219,8 +216,7 @@ export default function MyBookingsPage() {
   },[user?.id])
 
 
-  if(loading) 
-  return <div className="flex justify-center items-center h-[calc(100vh-65px)]"> <Loader/> </div>
+  if(loading) return <div className="flex justify-center items-center h-[calc(100vh-65px)]"> <Loader/> </div>
   return (
     <div>
         <Navbar/>
@@ -439,7 +435,7 @@ export default function MyBookingsPage() {
                     </Card>
                     ))}
 
-                    {filteredBookings?.length === 0 && (
+                    {filteredBookings?.length === 0 && !loading && (
                       <div className="text-center py-12">
                           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                           <h3 className="text-xl text-gray-600 mb-2">No bookings found</h3>
@@ -453,51 +449,11 @@ export default function MyBookingsPage() {
                     )}
 
                     {/* Pagination */}
-                    {/* {totalPages > 1 && ( */}
+                  {totalPages > 1 && (
                     <div className="flex justify-center mt-8">
                        <PaginationComponent page={currentPage} totalPages={totalPages} onPageChange={(newPage)=>{setCurrentPage(newPage)}}/>
-                        {/* <Pagination>
-                        <PaginationContent>
-                            <PaginationItem>
-                            <PaginationPrevious 
-                                href="#"
-                                onClick={(e) => {
-                                e.preventDefault();
-                                if (currentPage > 1) handlePageChange(currentPage - 1);
-                                }}
-                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                            />
-                            </PaginationItem>
-                            
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                            <PaginationItem key={page}>
-                                <PaginationLink
-                                href="#"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    handlePageChange(page);
-                                }}
-                                isActive={currentPage === page}
-                                >
-                                {page}
-                                </PaginationLink>
-                            </PaginationItem>
-                            ))}
-                            
-                            <PaginationItem>
-                            <PaginationNext 
-                                href="#"
-                                onClick={(e) => {
-                                e.preventDefault();
-                                if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                                }}
-                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                            />
-                            </PaginationItem>
-                        </PaginationContent>
-                        </Pagination> */}
                     </div>
-                    {/* )} */}
+                    )}
                 </div>
                 </TabsContent>
             </Tabs>

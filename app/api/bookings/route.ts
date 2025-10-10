@@ -32,6 +32,8 @@ export async function POST(req: Request) {
       currency
     } = await req.json();
 
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
     const { data: booking, error } = await supabase
       .from("bookings")
       .insert([
@@ -49,6 +51,7 @@ export async function POST(req: Request) {
           infants,
           inr_amount,
           payment_status: "Pending",
+          expires_at: expiresAt,
         },
       ])
       .select()

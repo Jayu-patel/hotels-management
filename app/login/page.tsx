@@ -32,7 +32,7 @@ export default function Login() {
 
   return( 
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200 p-4'>
-      <LoginPage onForgotPassword={()=>{router.push("/forget")}} />;
+      <LoginPage onForgotPassword={()=>{router.push("/forget")}} />
     </div>
   )
 }
