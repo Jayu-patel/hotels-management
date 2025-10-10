@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { DialogClose, DialogOverlay } from "@radix-ui/react-dialog";
 
 type ConfirmOptions = {
   title?: string;
@@ -62,14 +63,24 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <ConfirmContext.Provider value={value}>
       {children}
 
-      <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); setOpen(o); }}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => {
+          if (!o) onCancel();
+          setOpen(o);
+        }}
+      >
+        <DialogOverlay className="fixed inset-0 bg-black/10 backdrop-blur-xs" />
+
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-100">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-              <DialogTitle className="text-lg font-semibold">{options.title ?? "Are you sure?"}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">
+                {options.title ?? "Are you sure?"}
+              </DialogTitle>
             </div>
             <DialogDescription className="mt-2 text-sm text-muted-foreground">
               {options.description ?? "This action cannot be undone."}
@@ -77,12 +88,23 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
           </DialogHeader>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={onCancel}>{options.cancelText ?? "Cancel"}</Button>
+            <Button
+              variant="ghost"
+              className="cursor-pointer"
+              onClick={onCancel}
+            >
+              {options.cancelText ?? "Cancel"}
+            </Button>
             <Button
               onClick={onConfirm}
-              className={options.intent === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer' : 'cursor-pointer'}
+              className={
+                options.intent === "danger"
+                  ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                  : "cursor-pointer"
+              }
             >
-              {options.confirmText ?? (options.intent === 'danger' ? 'Delete' : 'Confirm')}
+              {options.confirmText ??
+                (options.intent === "danger" ? "Delete" : "Confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

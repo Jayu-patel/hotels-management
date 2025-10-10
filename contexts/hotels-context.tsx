@@ -288,9 +288,6 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
     return { rooms, name: hotelData.name, range: { start: startDate, end: endDate } };
   }
 
-
-
-
   return (
     <HotelsContext.Provider 
       value={

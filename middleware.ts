@@ -5,34 +5,63 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function middleware(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
+  const { pathname } = request.nextUrl;
 
-  // Fetch user once
   const { data: { user } } = await supabase.auth.getUser();
 
-  const protectedRoutes = ["/admin", "profile"];
+  const publicRoutes = ["/login", "/hotels", "/search"];
+  const userRoutes = ["/profile", "/bookings"];
+  const adminRoutes = ["/admin"];
 
-  if (protectedRoutes.some((path) => request.nextUrl.pathname.startsWith(path))) {
-    if (!user) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+  if(pathname === "/"){
+    return NextResponse.next();
+  }
 
-    // 2. Role check
-    const { data } = await supabase
+  if (user && pathname === "/login") {
+    const redirectUrl = new URL("/", request.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (publicRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.next();
+  }
+
+  if (!user) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (adminRoutes.some((r) => pathname.startsWith(r))) {
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (data?.role !== "admin") {
+    if (error || profile?.role !== "admin") {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
-  return await updateSession(request, user);
+  if (userRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.next();
+  }
+
+  const res = await updateSession(request, user);
+
+  res.headers.set("Cache-Control", "no-store, must-revalidate");
+  res.headers.set("Pragma", "no-cache");
+  res.headers.set("Expires", "0");
+
+  return res;
 }
 
 export const config = {
   matcher: [
-    '/', '/admin/:path*'
+    '/', 
+    '/admin', '/admin/:path*', 
+    '/profile', 
+    '/hotels', '/hotels/:path*', 
+    '/search', 
+    '/bookings'
   ],
 };

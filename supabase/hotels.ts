@@ -1,3 +1,11 @@
+import {supabase} from "@/lib/supabase/client"
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseSuper = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
+);
+
 interface GetHotelsParams {
   destination?: string;
   page?: number;
@@ -10,8 +18,6 @@ interface GetHotelsParams {
   sortBy?: string;
   priceRange?: number[];
 }
-
-import {supabase} from "@/lib/supabase/client"
 
 export async function searchHotels({
   destination,
@@ -31,7 +37,7 @@ export async function searchHotels({
   const from = (page - 1) * size;
   const to = from + size - 1;
 
-  // 🔹 Step 1: Fetch hotels with pagination + count
+  // ✅ Step 1: Fetch hotels (with pagination & count)
   const { data: hotels, error: hotelError, count } = await supabase
     .from("hotels")
     .select(
@@ -56,7 +62,7 @@ export async function searchHotels({
     return { data: [], totalCount: 0, totalPages: 0 };
   }
 
-  // 🔹 Step 2: Fetch all rooms for these hotels in one query
+  // ✅ Step 2: Fetch rooms for these hotels (in a single query)
   const hotelIds = hotels.map((h) => h.id);
 
   const { data: rooms, error: roomError } = await supabase
@@ -81,57 +87,118 @@ export async function searchHotels({
 
   if (roomError) throw roomError;
 
-  // 🔹 Step 3: Group rooms by hotel_id
+  // ✅ Step 3: Group rooms by hotel
   const roomsByHotel: Record<string, any[]> = {};
-  rooms.forEach((room) => {
-    if (!roomsByHotel[room.hotel_id]) {
-      roomsByHotel[room.hotel_id] = [];
-    }
+  for (const room of rooms) {
+    if (!roomsByHotel[room.hotel_id]) roomsByHotel[room.hotel_id] = [];
     roomsByHotel[room.hotel_id].push(room);
-  });
-
-  // 🔹 Step 4: Check availability
-  const availableHotels: any[] = [];
-
-  for (const hotel of hotels) {
-    const hotelRooms = roomsByHotel[hotel.id] || [];
-
-    const availableRooms = hotelRooms.filter((room) => {
-      const overlappingBookings =
-        room.bookings?.filter(
-          (b: any) => b.check_in < checkOut && b.check_out > checkIn
-        ) || [];
-
-      const bookedCount = overlappingBookings.reduce(
-        (sum: any, b: any) => sum + b.room_booked,
-        0
-      );
-
-      return bookedCount < room.count; // ✅ at least 1 room left
-    });
-
-    if (availableRooms.length > 0) {
-      availableHotels.push({ ...hotel, availableRooms });
-    }
   }
 
-  const totalCount = availableHotels.length;
-  const totalPages = Math.ceil(totalCount / size);
-  const from2 = (page - 1) * size;
-  const to2 = from + size;
-  const paginatedResults = availableHotels.slice(from2, to2);
+  // ✅ Step 4: Filter available hotels based on date overlap
+  const availableHotels = hotels
+    .map((hotel) => {
+      const hotelRooms = roomsByHotel[hotel.id] || [];
 
-  // return {
-  //   data: availableHotels,
-  //   totalCount: count ?? 0,
-  //   totalPages: Math.ceil((count ?? 0) / size),
-  // };
-  
+      const availableRooms = hotelRooms.filter((room) => {
+        const overlappingBookings =
+          room.bookings?.filter(
+            (b: any) =>
+              new Date(b.check_in) < new Date(checkOut) &&
+              new Date(b.check_out) > new Date(checkIn)
+          ) || [];
+
+        const totalBooked = overlappingBookings.reduce(
+          (sum: number, b: any) => sum + b.room_booked,
+          0
+        );
+
+        return totalBooked < room.count && room.capacity >= guestCount;
+      });
+
+      if (availableRooms.length > 0) {
+        return { ...hotel, availableRooms };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  // ✅ Step 5: Apply pagination AFTER filtering available hotels
+  const totalCountAvailable = availableHotels.length;
+  const totalPages = Math.ceil(totalCountAvailable / size);
+  const paginatedResults = availableHotels.slice(from, to + 1);
+
+  // ✅ Step 6: Return final structured response
   return {
     data: paginatedResults,
-    totalCount,
+    totalCount: totalCountAvailable,
     totalPages,
   };
+}
+
+export async function getRoomsAvailability({
+  hotelId,
+  checkIn,
+  checkOut,
+  guestCount = 1,
+}: {
+  hotelId: string;
+  checkIn: string;
+  checkOut: string;
+  guestCount?: number;
+}) {
+  // Step 1: Fetch all rooms with bookings, images, and amenities
+
+  const { data: roomsData, error } = await supabaseSuper
+    .from("rooms")
+    .select(`
+      id,
+      name,
+      price,
+      capacity,
+      count,
+      room_type,
+      description,
+      hotel_id,
+      images: room_images( id, image_url ),
+      amenities: room_amenities( amenity_id ( id, name ) ),
+      bookings!left( room_booked, check_in, check_out )
+    `)
+    .eq("hotel_id", hotelId);
+
+  if (error) throw error;
+
+  // Step 2: Map and compute availability
+  const rooms = (roomsData || []).map((room: any, i: number) => {
+    const overlappingBookings =
+      room.bookings?.filter(
+        (b: any) => 
+          new Date(b.check_in) < new Date(checkOut) &&
+          new Date(b.check_out) > new Date(checkIn)
+      ) || [];
+
+    const bookedCount = overlappingBookings.reduce(
+      (sum: number, b: any) => sum + Number(b.room_booked),
+      0
+    );
+
+    // Available if at least 1 room left AND capacity fits guests
+    const available = bookedCount < Number(room.count) && Number(room.capacity) >= guestCount;
+
+    return {
+      id: room.id,
+      hotelId: room.hotel_id,
+      name: room.name,
+      type: room.room_type,
+      description: room.description ?? "",
+      imageUrls: room.images?.map((img: any) => img.image_url) || [],
+      pricePerNight: room.price,
+      maxOccupancy: room.capacity,
+      amenities: room.amenities?.map((a: any) => a.amenity_id.name) || [],
+      available,
+    };
+  });
+
+  return rooms;
 }
 
 export async function getHotelRooms(hotelId: string, checkIn: string, checkOut: string) {

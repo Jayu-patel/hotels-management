@@ -68,6 +68,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       throw error
     }
     router.push("/")
+    router.refresh()
+    toast.success("Successfully logged out");
   };
 
   const value = {

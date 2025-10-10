@@ -35,13 +35,13 @@ export function CurrencyProvider({children}: CurrencyProviderProps){
     const [rate, setRate] = useState(0)
     const [symbol, setSymbol] = useState("$");
 
-    const currencyConverter=(price: number)=>{
-        if(rate){
-            if(currency == "inr") return price * rate
-            else return price
-        }
-        return price
-    }
+    const currencyConverter = (price: number) => {
+        if (!rate) return Math.floor(price);
+
+        const converted = currency === "inr" ? price * rate : price;
+        return Math.floor(converted);
+    };
+
 
     const setCurrency = (value: Currency) => {
         setCurrencyState(value);
@@ -74,7 +74,6 @@ export function CurrencyProvider({children}: CurrencyProviderProps){
         if (typeof window === "undefined") return;
         const stored = localStorage.getItem("currency") as Currency | null;
         if (stored){
-            console.log("oooooo", stored)
             setCurrency(stored);
             setSymbol(stored == "usd" ? "$" : "₹")
         } 

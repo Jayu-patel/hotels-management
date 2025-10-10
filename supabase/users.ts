@@ -15,7 +15,7 @@ export async function getAllUsers({page = 1, size = 8, searchTerm = ''}): Promis
         avatar_url,
         created_at,
         email,
-        bookings: bookings(user_id, room_booked, total_amount)
+        bookings: bookings(user_id, room_booked, total_amount, payment_status)
     `,
         { count: "exact" }
     )
@@ -30,10 +30,6 @@ export async function getAllUsers({page = 1, size = 8, searchTerm = ''}): Promis
         );
     }
 
-    // if (roleFilter !== 'All') {
-    //     query = query.eq('role', roleFilter);
-    // }
-
     const {data, error, count} = await query 
 
     if (error) {
@@ -46,7 +42,10 @@ export async function getAllUsers({page = 1, size = 8, searchTerm = ''}): Promis
         phoneNumber: user.phone,
         createdAt: user.created_at,
         totalBookings: user.bookings?.reduce((acc, b) => acc + (b.room_booked || 0),0) || 0,
-        totalSpent: user.bookings?.reduce((acc, b) => acc + (b.total_amount  || 0),0) || 0,
+        // totalSpent: user.bookings?.reduce((acc, b) => acc + (b.total_amount  || 0),0) || 0,
+        totalSpent: user.bookings
+            ?.filter(b => b.payment_status == "Paid")
+            .reduce((acc, b) => acc + (b.total_amount || 0), 0) || 0,
     }));
 
     const totalPages = Math.ceil((count ?? 0) / size);
