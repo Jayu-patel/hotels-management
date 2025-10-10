@@ -19,21 +19,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useDebounce } from "@/hooks/debounce";
 import { useSearchParams } from 'next/navigation';
 
-interface Hotel {
-  id?: string;
-  name?: string;
-  location?: string;
-  rating?: number;
-  reviewCount?: number;
-  pricePerNight?: number;
-  originalPrice?: number;
-  imageUrl?: string;
-  amenities?: string[];
-  distance?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-}
-
 const amenityIcons: { [key: string]: React.ReactNode } = {
   'Free WiFi': <Wifi className="h-4 w-4" />,
   'Parking': <Car className="h-4 w-4" />,
@@ -86,7 +71,6 @@ export default function HotelsPage() {
   const children = searchParams.get('children') || '';
   const infants = searchParams.get('infants') || '';
 
-
   const searchLoad=async()=>{
     const totalGuests = Number(adults) + Number(children)
     if(destination){
@@ -128,6 +112,7 @@ export default function HotelsPage() {
     }
     getFilter()
   },[])
+
 
   useEffect(()=>{
     searchLoad()
@@ -337,7 +322,7 @@ export default function HotelsPage() {
                         <p className="text-xs text-gray-500">Includes taxes and fees</p>
                       </div> */}
                       
-                      <Link href={`/hotels/${hotel.id}`}>
+                      <Link href={`/hotels/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}`}>
                         <Button className='cursor-pointer'>
                           View Details
                         </Button>
@@ -349,9 +334,13 @@ export default function HotelsPage() {
             ))}
           </div>
         }
-        <div className="flex justify-center mt-6 mb-5">
-          <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
-        </div>
+        {
+          totalPages > 1 ?
+          <div className="flex justify-center mt-6 mb-5">
+            <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
+          </div> :
+          <></>
+        }
 
         {!loading && hotels.length === 0 && (
           <div className="text-center py-12">

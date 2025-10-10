@@ -65,7 +65,7 @@ export function RoomCard({ room, onSelect }: RoomCardProps) {
     if(curr == "inr") return price * 82
     else return price
   }
-
+  
   return (
     <Card className={`overflow-hidden transition-all duration-200 ${
       room.available ? 'hover:shadow-lg cursor-pointer' : 'opacity-60'
@@ -178,7 +178,7 @@ export function RoomCard({ room, onSelect }: RoomCardProps) {
               disabled={!room.available}
               className="w-full sm:w-auto min-w-[120px] cursor-pointer"
             >
-              {room.available ? 'Book Room' : 'Unavailable'}
+              Book Room
             </Button>
           </div>
         </CardContent>

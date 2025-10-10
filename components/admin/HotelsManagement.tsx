@@ -867,7 +867,7 @@ useEffect(() => {
       }
 
       {/* Pagination */}
-      {totalPages >= 1 && (
+      {totalPages > 1 && (
         <div className="flex justify-center">
           <PaginationComponent
             page={currentPage}

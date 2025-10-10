@@ -47,6 +47,7 @@ interface BookingModalProps {
   userId: string;
   onClose: () => void;
   onSubmit: (bookingData: any) => void;
+  dates: {from?: string, to?: string}
 }
 
 interface GuestCount {
@@ -55,7 +56,7 @@ interface GuestCount {
   infants: number;
 }
 
-export function BookingModal({ room, hotel, userId, onClose, onSubmit }: BookingModalProps) {
+export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: BookingModalProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
@@ -66,13 +67,22 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit }: Booking
     children: 0,
     infants: 0,
   });
+  
   const [rooms, setRooms] = useState('1');
-  const [specialRequests, setSpecialRequests] = useState('');
   const { currency, symbol, rate, currencyConverter } = useCurrency();
 
   const [loading, setLoading] = useState(false)
   const [bookLoading, setBookLoading] = useState(false)
   const [availableRooms, setAvailableRooms] = useState<number | null>(0)
+
+  useEffect(()=>{
+    if(dates.from && dates.to){
+      setDateRange({
+        from: new Date(dates.from),
+        to: new Date(dates.to)
+      })
+    }
+  },[dates])
 
   const calculateNights = () => {
     if (dateRange?.from && dateRange?.to) {
@@ -87,14 +97,14 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit }: Booking
   let subtotal = nights * room.pricePerNight * Number(rooms);
   let taxes = subtotal * 0;
   let serviceFee = subtotal * 0.05;
-  let total = subtotal + taxes + serviceFee;
+  let total = Math.floor(subtotal + taxes + serviceFee)
   const dollorPrice = total
 
   if (currency === "inr") {
     subtotal *= rate;
     serviceFee *= rate;
     taxes *= rate;
-    total *= rate;
+    total = Math.floor(total * rate)
   }
 
   const maxGuestsAllowed = Number(rooms) * room.maxOccupancy;
@@ -128,24 +138,25 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit }: Booking
         adults: guestCount.adults,
         children: guestCount.children,
         infants: guestCount.infants,
-        inr_amount: dollorPrice * rate,
+        inr_amount: Math.floor(dollorPrice * rate),
         currency
       });
 
       if(res.status == 200){
         const data = res.data;
         if (data.url) window.location.href = data.url;
-        setBookLoading(false)
         toast.success("Room booked successfully!")
         onClose()
       }
       else{
         toast.error("Booking failed!!")
-        setBookLoading(false)
       }
     }
     catch(err: any){
       toast.error(err.message)
+    }
+    finally{
+      setBookLoading(false)
     }
     
     onSubmit({

@@ -44,8 +44,8 @@ const amenityIcons: { [key: string]: React.ReactNode } = {
 
 export default function HomePage() {
   const [destination, setDestination] = useState("");
-  const [checkIn, setCheckIn] = useState<Date>();
-  const [checkOut, setCheckOut] = useState<Date>();
+  const [checkIn, setCheckIn] = useState<Date| undefined>(undefined);
+  const [checkOut, setCheckOut] = useState<Date | undefined>(undefined);
   // const [guests, setGuests] = useState(1);
   const [guest, setGuest] = useState<GuestCount>({
     adults: 1,
@@ -63,24 +63,7 @@ export default function HomePage() {
 
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchHotels() {
-      setLoading(true)
-      try {
-        const {data: hotels} = await getHotels();
-        setFeaturedHotels(hotels.slice(0, 3));
-      } catch (err: any) {
-        toast.error(err)
-      }
-      finally{
-        setLoading(false)
-      }
-    }
-    fetchHotels();
-  }, []);
-
   const handleSearch = async() => {
-
     setErrors({});
 
     let newErrors : errorType = {};
@@ -115,13 +98,62 @@ export default function HomePage() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      return; // stop form submit
+      return;
     }
 
     const totalGuests = guest.adults + guest.children + guest.infants;
 
     router.push(`/search?destination=${destination}&checkIn=${checkIn?.toISOString()}&checkOut=${checkOut?.toISOString()}&adults=${guest.adults}&children=${guest.children}&infants=${guest.infants}`);
   };
+
+const handleCheckInChange = (date?: Date) => {
+  setCheckIn(date);
+
+  setErrors((prev) => {
+    const { checkIn: inDate, ...rest } = prev;
+    let newErrors : errorType = { ...rest };
+
+    if (!date) {
+      newErrors.checkIn = "Please select a check-in date.";
+    }
+
+    return newErrors;
+  });
+};
+
+const handleCheckOutChange = (date?: Date) => {
+  setCheckOut(date);
+
+  setErrors((prev) => {
+    const { checkOut, ...rest } = prev;
+    let newErrors : errorType = { ...rest };
+
+    if (!date) {
+      newErrors.checkOut = "Please select a check-out date.";
+    } else if (checkIn && date <= checkIn) {
+      newErrors.checkOut = "Check-out date must be after check-in date.";
+    }
+
+    return newErrors;
+  });
+};
+
+
+  useEffect(() => {
+    async function fetchHotels() {
+      setLoading(true)
+      try {
+        const {data: hotels} = await getHotels();
+        setFeaturedHotels(hotels.slice(0, 3));
+      } catch (err: any) {
+        toast.error(err)
+      }
+      finally{
+        setLoading(false)
+      }
+    }
+    fetchHotels();
+  }, []);
 
   useEffect(() => {
     const fetchDestinations = async () => {
@@ -142,7 +174,6 @@ export default function HomePage() {
     fetchDestinations();
   }, []);
 
-  // Filter destinations as user types
   useEffect(() => {
     if (destination.trim() === "") {
       setFilteredDestinations(allDestinations);
@@ -194,8 +225,14 @@ export default function HomePage() {
                     value={destination}
                     onFocus={() => setShowSuggestions(true)}
                     onChange={(e) => {
-                      setDestination(e.target.value);
+                      const value = e.target.value
+                      setDestination(value);
                       setShowSuggestions(true);
+
+                      setErrors((prev) => {
+                        const { destination, ...rest } = prev;
+                        return value.trim() ? rest : { ...rest, destination: "Destination is required." };
+                      });
                     }}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     required
@@ -210,6 +247,11 @@ export default function HomePage() {
                             onMouseDown={() => { // prevent blur before click
                               setDestination(d);
                               setShowSuggestions(false);
+
+                              setErrors((prev) => {
+                                const { destination, ...rest } = prev;
+                                return d.trim() ? rest : { ...rest, destination: "Destination is required." };
+                              });
                             }}
                           >
                             {d}
@@ -241,8 +283,7 @@ export default function HomePage() {
                       <Calendar
                         mode="single"
                         selected={checkIn}
-                        onSelect={setCheckIn}
-                        // disabled={(date) => date < new Date()}
+                        onSelect={handleCheckInChange}
                         disabled={(date) => {
                           const today = new Date();
                           today.setHours(0, 0, 0, 0); // reset time → 00:00:00
@@ -272,7 +313,7 @@ export default function HomePage() {
                       <Calendar
                         mode="single"
                         selected={checkOut}
-                        onSelect={setCheckOut}
+                        onSelect={handleCheckOutChange}
                         disabled={(date) => date < new Date() || (checkIn !== undefined && date <= checkIn)}
                         initialFocus
                       />

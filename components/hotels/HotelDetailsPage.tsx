@@ -1,8 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
   ArrowLeft, 
@@ -12,7 +10,6 @@ import {
   Car, 
   Coffee, 
   Dumbbell, 
-  Users, 
   Bed, 
   Bath,
   Calendar,
@@ -25,11 +22,12 @@ import {
 import { RoomCard } from './RoomCard';
 import { BookingModal } from './BookingModal';
 import { toast } from 'react-toastify';
-import { supabase } from '@/lib/supabase/client';
 import Navbar from '@/components/navbar'
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/auth-context';
+import { useSearchParams } from 'next/navigation';
+
 
 interface Hotel {
   id: string;
@@ -75,9 +73,9 @@ export default function HotelDetailsPage({ hotel, rooms }: HotelDetailsPageProps
   const [showBookingModal, setShowBookingModal] = useState(false);
 
   const router = useRouter()
-
-
-//   const rooms = mockRooms;
+  const searchParams = useSearchParams();
+  const checkIn = searchParams.get('checkIn') || '';
+  const checkOut = searchParams.get('checkOut') || '';
 
   const nextImage = () => {
     if(hotel)
@@ -201,14 +199,14 @@ export default function HotelDetailsPage({ hotel, rooms }: HotelDetailsPageProps
                   </div>
                 </div>
                 
-                <div className="flex gap-2 self-start">
+                {/* <div className="flex gap-2 self-start">
                   <Button variant="outline" size="icon">
                     <Heart className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="icon">
                     <Share className="h-4 w-4" />
                   </Button>
-                </div>
+                </div> */}
               </div>
               
               <p className="text-gray-700 leading-relaxed">{hotel?.description}</p>
@@ -292,6 +290,7 @@ export default function HotelDetailsPage({ hotel, rooms }: HotelDetailsPageProps
             userId={user.id}
             onClose={() => setShowBookingModal(false)}
             onSubmit={handleBookingSubmit}
+            dates={{from: checkIn ?? "", to: checkOut ?? ""}}
           />
         )}
       </div>

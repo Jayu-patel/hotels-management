@@ -284,9 +284,13 @@ export function UsersManagement() {
             </Table>
           </div>
 
-          <div className="flex justify-center mt-6">
-            <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
-          </div>
+          {
+            totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
+              </div>
+            )
+          }
 
           {isAddOpen && (
             <AddUserDialog open={isAddOpen} onOpenChange={setIsAddOpen} />

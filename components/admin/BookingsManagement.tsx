@@ -431,7 +431,7 @@ export function BookingsManagement() {
                       </div>
                     </TableCell>
                     <TableCell>{booking.guest_count}</TableCell>
-                    <TableCell>{symbol}{currency == "usd" ? booking.total_amount.toLocaleString(): (booking.inr_amount || (booking.total_amount * rate) )}</TableCell>
+                    <TableCell>{symbol}{currency == "usd" ? booking.total_amount.toLocaleString(): (booking.inr_amount)}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusColor(booking.status)}>
                         {booking.status}
@@ -494,14 +494,18 @@ export function BookingsManagement() {
             </Table>
           </div>
           
-          <div className="flex justify-center mt-6">
-            <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
-          </div>
+          {
+            totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
+              </div>
+            )
+          }
 
 
           {bookings?.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No bookings found matching your criteria</p>
+              <p className="text-gray-500">No bookings found</p>
             </div>
           )}
         </CardContent>
