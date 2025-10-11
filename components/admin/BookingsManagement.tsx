@@ -6,8 +6,14 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Search, Calendar, User, Hotel, DollarSign, IndianRupee } from 'lucide-react';
+import { Search, Calendar, User, Hotel, DollarSign, IndianRupee, Eye } from 'lucide-react';
 import { bookingStatistics, getAllBookings, getBookingsById, updateBookings } from '@/supabase/bookings';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { toast } from 'react-toastify';
 import Loader from '@/components/loader'
 import { supabase } from '@/lib/supabase/client';
@@ -16,6 +22,7 @@ import PaginationComponent from "@/components/pagination"
 import TextLoader from '@/components/textLoader'
 import { useCurrency } from '@/contexts/currency-context';
 import { useDebounce } from "@/hooks/debounce";
+import DataModal from "@/components/data-modal"
 
 export interface Booking {
   id: string;
@@ -52,6 +59,8 @@ export function BookingsManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [paymentFilter, setPaymentFilter] = useState('All');
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState<any>(null);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -442,7 +451,7 @@ export function BookingsManagement() {
                         {booking.payment_status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <div className="flex gap-1">
                         {booking.status === 'Confirmed' && (
                           <Button
@@ -486,7 +495,102 @@ export function BookingsManagement() {
                             }
                           </Button>
                         )}
+
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className='cursor-pointer'
+                          onClick={() => {
+                            setSelected({
+                              guest: booking.users?.full_name,
+                              email: booking.users?.email,
+                              hotel: booking.hotels?.name,
+                              room: booking.rooms?.name,
+                              checkIn: new Date(booking.check_in).toLocaleDateString("en-GB"),
+                              checkOut: new Date(booking.check_out).toLocaleDateString("en-GB"),
+                              amount: currency == "usd" ? `${symbol}${booking.total_amount.toLocaleString()}`: `${symbol}${booking.inr_amount}`,
+                              status: booking.status,
+                              payment: booking.payment_status
+                            })
+                            setOpen(true)
+                          }}
+                        >
+                            View
+                        </Button>
+
+
                       </div>
+                    </TableCell> */}
+
+                    <TableCell className='[&_DropdownMenuItem]:cursor-pointer'>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="cursor-pointer flex items-center justify-center"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {booking.status === "Confirmed" && (
+                            <DropdownMenuItem
+                              onClick={() => updateBookingStatus(booking.id, "Checked In")}
+                            >
+                              {actionLoading.loading && actionLoading.id == booking.id ? (
+                                <TextLoader text="Check In" loading={actionLoading.loading} />
+                              ) : (
+                                "Check In"
+                              )}
+                            </DropdownMenuItem>
+                          )}
+                          {booking.status === "Checked In" && (
+                            <DropdownMenuItem
+                              onClick={() => updateBookingStatus(booking.id, "Checked Out")}
+                            >
+                              {actionLoading.loading && actionLoading.id == booking.id ? (
+                                <TextLoader text="Check Out" loading={actionLoading.loading} />
+                              ) : (
+                                "Check Out"
+                              )}
+                            </DropdownMenuItem>
+                          )}
+                          {(booking.status === "Confirmed" || booking.status === "Checked In") && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => updateBookingStatus(booking.id, "Cancelled")}
+                            >
+                              {cancelLoading.loading && cancelLoading.id == booking.id ? (
+                                <TextLoader text="Cancel" loading={cancelLoading.loading} />
+                              ) : (
+                                "Cancel"
+                              )}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelected({
+                                guest: booking.users?.full_name,
+                                email: booking.users?.email,
+                                hotel: booking.hotels?.name,
+                                room: booking.rooms?.name,
+                                checkIn: new Date(booking.check_in).toLocaleDateString("en-GB"),
+                                checkOut: new Date(booking.check_out).toLocaleDateString("en-GB"),
+                                amount:
+                                  currency == "usd"
+                                    ? `${symbol}${booking.total_amount.toLocaleString()}`
+                                    : `${symbol}${booking.inr_amount}`,
+                                status: booking.status,
+                                payment: booking.payment_status,
+                              })
+                              setOpen(true)
+                            }}
+                          >
+                            View
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -508,6 +612,8 @@ export function BookingsManagement() {
               <p className="text-gray-500">No bookings found</p>
             </div>
           )}
+
+          <DataModal data={selected} onClose={()=>{setOpen(false)}} open={open} title='Bookings Details'/>
         </CardContent>
       </Card>
     </div>
