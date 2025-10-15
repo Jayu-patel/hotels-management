@@ -189,6 +189,7 @@ export async function getUserBookings(
       payment_status,
       created_at,
       inr_amount,
+      reviewed,
 
       hotel:hotel_id (
         id,
@@ -251,7 +252,8 @@ export async function getUserBookings(
         paymentStatus: b.payment_status,
         bookingDate: new Date(b.created_at),
         hotel_amenities: b.hotel?.hotel_amenities?.map((ra: any) => ra.amenity_id?.name) ?? [],
-        room_info: {name: b.room?.name, type: b.room?.room_type}
+        room_info: {id: b.room?.id, name: b.room?.name, type: b.room?.room_type},
+        reviewed: b.reviewed
       };
     }) ?? [];
 

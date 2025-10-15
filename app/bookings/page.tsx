@@ -21,6 +21,7 @@ import axios from 'axios';
 import Loader from '@/components/loader'
 import PaginationComponent from '@/components/pagination';
 import { useCurrency } from '@/contexts/currency-context';
+import ReviewPopup from '@/components/bookings/ReviewModal';
 
 interface Booking {
   id: string;
@@ -34,10 +35,11 @@ interface Booking {
   guests: number;
   totalAmount: number;
   inr_amount: number;
-  status: 'Confirmed' | 'Upcoming' | 'Completed' | 'Cancelled';
+  status: "Confirmed" | "Checked In" | "Checked Out" | "Cancelled";
   paymentStatus: 'Paid' | 'Pending' | 'Refunded';
   bookingDate: Date;
-  room_info?: {name: string, type: string}
+  room_info?: {id: string, name: string, type: string}
+  reviewed: boolean
 }
 
 export default function MyBookingsPage() {
@@ -71,9 +73,9 @@ export default function MyBookingsPage() {
     
     let matchesTab = true;
     if (activeTab === 'upcoming') {
-      matchesTab = booking.status === 'Upcoming';
+      matchesTab = booking.status === 'Confirmed';
     } else if (activeTab === 'completed') {
-      matchesTab = booking.status === 'Completed';
+      matchesTab = booking.status === 'Checked Out';
     } else if (activeTab === 'cancelled') {
       matchesTab = booking.status === 'Cancelled';
     }
@@ -83,8 +85,8 @@ export default function MyBookingsPage() {
 
   const getStatusColor = (status: Booking['status']) => {
     switch (status) {
-      case 'Upcoming': return 'default';
-      case 'Completed': return 'secondary';
+      case 'Confirmed': return 'default';
+      case 'Checked Out': return 'secondary';
       case 'Cancelled': return 'destructive';
       default: return 'default';
     }
@@ -318,12 +320,6 @@ export default function MyBookingsPage() {
             
             <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">All ({bookings?.length})</TabsTrigger>
-                <TabsTrigger value="upcoming">Upcoming ({0})</TabsTrigger>
-                <TabsTrigger value="completed">Completed ({0})</TabsTrigger>
-                <TabsTrigger value="cancelled">Cancelled ({0})</TabsTrigger>
-                </TabsList> */}
                 
                 <TabsContent value={activeTab} className="mt-6">
                 <div className="space-y-4">
@@ -383,7 +379,7 @@ export default function MyBookingsPage() {
 
                             <div className="text-right space-y-2">
                                 <div>
-                                <p className="text-2xl text-green-600">{symbol}{ currency == "usd" ? booking.totalAmount.toLocaleString() : booking.inr_amount}</p>
+                                <p className="text-2xl text-green-600">{symbol}{ currency == "usd" ? booking.totalAmount.toLocaleString() : (booking.inr_amount).toLocaleString()}</p>
                                 <Badge variant={getPaymentStatusColor(booking.paymentStatus)} className="text-xs">
                                     {booking.paymentStatus}
                                 </Badge>
@@ -426,6 +422,10 @@ export default function MyBookingsPage() {
                                         cancelLoading ? "Loading..." : "Cancel Booking"
                                       }
                                     </Button>
+                                )}
+
+                                {booking.status === 'Checked Out' && (
+                                    <ReviewPopup booking={{id: booking.id, room_id: booking.room_info?.id, room_name: booking.roomName, status: booking.status, user_id: user?.id, reviewed: booking.reviewed}} />
                                 )}
                                 </div>
                             </div>
