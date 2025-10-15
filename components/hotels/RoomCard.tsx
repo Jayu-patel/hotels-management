@@ -166,7 +166,7 @@ export function RoomCard({ room, onSelect }: RoomCardProps) {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-2xl text-green-600">
-                  {symbol}{currencyConverter(room.pricePerNight)}
+                  {symbol}{(currencyConverter(room.pricePerNight)).toLocaleString()}
                 </span>
                 <span className="text-sm text-gray-600">/ night</span>
               </div>

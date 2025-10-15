@@ -46,7 +46,7 @@ export function AdminDashboard() {
     },
     {
       title: 'Monthly Revenue',
-      value: currencyConverter(monthlyRevenue),
+      value: (currencyConverter(monthlyRevenue)).toLocaleString(),
       change: '+8.2%',
       changeType: 'positive' as const,
       icon: currency == "usd" ? DollarSign : IndianRupee,
@@ -134,7 +134,7 @@ export function AdminDashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-green-600">{symbol}{currencyConverter(hotel.revenue)}</p>
+                    <p className="text-sm text-green-600">{symbol}{(currencyConverter(hotel.revenue)).toLocaleString()}</p>
                     <p className="text-xs text-gray-600">Revenue</p>
                   </div>
                 </div>

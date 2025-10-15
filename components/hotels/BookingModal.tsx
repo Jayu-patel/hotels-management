@@ -473,7 +473,7 @@ useEffect(()=>{
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>
-                            {symbol}{currencyConverter(room.pricePerNight)} × {rooms} room{Number(rooms) > 1 ? 's' : ''} × {nights} night
+                            {symbol}{(currencyConverter(room.pricePerNight)).toLocaleString()} × {rooms} room{Number(rooms) > 1 ? 's' : ''} × {nights} night
                             {nights > 1 ? 's' : ''}
                           </span>
                           <span>{symbol}{subtotal.toFixed(2)}</span>

@@ -253,7 +253,7 @@ useEffect(() => {
   };
   
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {   
+const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {   
   const files = event.target.files;
   if (files) {
     Array.from(files).forEach((file) => {
@@ -684,33 +684,6 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      {hotel.rating}
-                    </div>
-                  </div> */}
-
-                  {/* <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <Bed className="w-4 h-4" />
-                      {hotel.totalRooms} rooms
-                    </div>
-                    <span className="text-green-600">{hotel.availableRooms} available</span>
-                  </div> */}
-
-                  {/* Room Types Display */}
-                  {/* <div className="space-y-1">
-                    <div className="text-sm">Room Types:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {hotel.roomTypes.map((roomType, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {roomType.type}: {roomType.count}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div> */}
-
                   <div className="flex flex-wrap gap-1">
                     {hotel.amenities
                       .slice(0, 3)
@@ -880,7 +853,8 @@ useEffect(() => {
       )}
 
       <Dialog open={isHotelDialogOpen} onOpenChange={setIsHotelDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh]">
+        {/* <DialogContent className="max-w-6xl max-h-[90vh]"> */}
+        <DialogContent className="w-full max-w-[75vw] sm:max-w-xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingHotel ? "Edit Hotel" : "Add New Hotel"}
@@ -928,24 +902,6 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* <div className="space-y-2">
-                    <Label htmlFor="hotel-destination">Destination</Label>
-                    <Select value={hotelForm.destination} onValueChange={(value) => setHotelForm({ ...hotelForm, destination: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select destination" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Mumbai">Mumbai</SelectItem>
-                        <SelectItem value="Dubai">Dubai</SelectItem>
-                        <SelectItem value="London">London</SelectItem>
-                        <SelectItem value="New York">New York</SelectItem>
-                        <SelectItem value="Paris">Paris</SelectItem>
-                        <SelectItem value="Tokyo">Tokyo</SelectItem>
-                        <SelectItem value="San Diego">San Diego</SelectItem>
-                        <SelectItem value="Delhi">Delhi</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div> */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Country */}
                     <div>
@@ -1216,6 +1172,7 @@ useEffect(() => {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+      
     </div>
   );
 }

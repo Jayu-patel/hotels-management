@@ -23,7 +23,8 @@ export default function DataModal({ open, onClose, title, data }: DataModalProps
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-0 border-none shadow-2xl rounded-2xl overflow-hidden bg-white">
+      <DialogContent className="w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[95vh] overflow-y-auto p-0">
+      {/* <DialogContent className="max-w-3xl p-0 border-none shadow-2xl rounded-2xl overflow-hidden bg-white"> */}
         {/* Header */}
         <DialogHeader className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
           <DialogTitle className="text-2xl font-bold text-gray-900">{title}</DialogTitle>

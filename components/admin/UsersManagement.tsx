@@ -216,7 +216,7 @@ export function UsersManagement() {
                       </Badge>
                     </TableCell> */}
                     <TableCell>{user.totalBookings}</TableCell>
-                    <TableCell>{symbol}{ currency == "usd" ? user.totalSpent.toLocaleString() : currencyConverter(user.totalSpent)}</TableCell>
+                    <TableCell>{symbol}{ currency == "usd" ? user.totalSpent.toLocaleString() : (currencyConverter(user.totalSpent)).toLocaleString()}</TableCell>
                     {/* <TableCell>
                       <div className="text-sm">
                         {user.lastLogin.toLocaleDateString()}

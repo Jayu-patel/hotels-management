@@ -319,7 +319,7 @@ export function BookingsManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-                <p className="text-2xl">{symbol}{currencyConverter(totalRevenue)}</p>
+                <p className="text-2xl">{symbol}{(currencyConverter(totalRevenue)).toLocaleString()}</p>
               </div>
               <div className="p-3 bg-purple-50 rounded-lg">
                 {
@@ -440,7 +440,7 @@ export function BookingsManagement() {
                       </div>
                     </TableCell>
                     <TableCell>{booking.guest_count}</TableCell>
-                    <TableCell>{symbol}{currency == "usd" ? booking.total_amount.toLocaleString(): (booking.inr_amount)}</TableCell>
+                    <TableCell>{symbol}{currency == "usd" ? booking.total_amount.toLocaleString(): (booking.inr_amount).toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusColor(booking.status)}>
                         {booking.status}

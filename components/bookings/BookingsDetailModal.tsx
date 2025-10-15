@@ -35,7 +35,7 @@ interface Booking {
   checkOut: Date;
   guests: number;
   totalAmount: number;
-  status: 'Confirmed' | 'Upcoming' | 'Completed' | 'Cancelled';
+  status: "Confirmed" | "Checked In" | "Checked Out" | "Cancelled";
   paymentStatus: 'Paid' | 'Pending' | 'Refunded';
   bookingDate: Date;
   room_info?: {name: string, type: string},
@@ -94,8 +94,8 @@ export function BookingDetailsModal({ booking, isOpen, onClose, onCancel }: Book
 
   const getStatusColor = (status: Booking['status']) => {
     switch (status) {
-      case 'Upcoming': return 'default';
-      case 'Completed': return 'secondary';
+      case 'Confirmed': return 'default';
+      case 'Checked Out': return 'secondary';
       case 'Cancelled': return 'destructive';
       default: return 'default';
     }
