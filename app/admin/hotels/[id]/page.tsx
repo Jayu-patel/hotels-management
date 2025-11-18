@@ -22,6 +22,7 @@ import { useConfirm } from '@/contexts/confirmation';
 import Loader from '@/components/loader'
 import { removeRoom } from '@/supabase/bookings';
 import TextLoader from "@/components/textLoader"
+import { RoomManagementForm } from '@/components/hotels/room/RoomForm';
 
 interface RoomImage {
   id: string;
@@ -72,6 +73,8 @@ export default function page({params}:{params : Promise<Params>}) {
   const [loading, setLoading] = useState(true)
   const [btnLoading, setBtnLoading] = useState(false)
   const [dateLoading, setDateLoading] = useState(true)
+
+  const [mode, setMode] = useState<'add' | 'edit' | 'view'>("add")
 
   const {getHotelRooms} = useHotels()
   const router = useRouter()
@@ -577,6 +580,7 @@ export default function page({params}:{params : Promise<Params>}) {
           <Button
             onClick={() => {
               setEditingRoom(null);
+              setMode("add")
               setRoomForm({
                 name: "",
                 type: "",
@@ -643,6 +647,7 @@ export default function page({params}:{params : Promise<Params>}) {
                         variant="outline"
                         onClick={() => {
                           setEditingRoom(room);
+                          setMode("edit")
                           setRoomForm({
                             name: room.name,
                             type: room.type,
@@ -678,7 +683,7 @@ export default function page({params}:{params : Promise<Params>}) {
       </Card>
 
       {/* Room Dialog */}
-      <Dialog open={isRoomDialogOpen} onOpenChange={setIsRoomDialogOpen}>
+      <Dialog open={false} onOpenChange={setIsRoomDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingRoom ? 'Edit Room' : 'Add New Room'}</DialogTitle>
@@ -924,6 +929,17 @@ export default function page({params}:{params : Promise<Params>}) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <RoomManagementForm
+          room={editingRoom}
+          setRoom={setEditingRoom}
+          mode={mode}
+          setFormMode={setMode}
+          isAddDialogOpen={isRoomDialogOpen}
+          setIsAddDialogOpen={setIsRoomDialogOpen}
+          hotel_id={id}
+      />
+      
     </div>
   );
 }

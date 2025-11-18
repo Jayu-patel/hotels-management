@@ -29,7 +29,8 @@ export async function POST(req: Request) {
       children,
       infants,
       inr_amount,
-      currency
+      currency,
+      option_id
     } = await req.json();
 
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
           children,
           infants,
           inr_amount,
+          option_id,
           payment_status: "Pending",
           expires_at: expiresAt,
         },
