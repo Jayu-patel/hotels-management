@@ -23,6 +23,7 @@ import { Country, State, City } from "country-state-city";
 import TextLoader from "@/components/textLoader"
 import ViewToggleButton from "@/components/ui/view-toggle-button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { HotelManagementForm } from './AddHotelForm';
 
 interface HotelImage {
   id: string;
@@ -51,6 +52,8 @@ interface Hotel {
   images: HotelImage[];
   description: string;
   amenities: amenityType[];
+  facilities?: {title: string, items: string[]}[]
+  policies?: { id: string; title: string; description: string }[],
   // roomTypes: RoomType[];
 }
 
@@ -79,7 +82,7 @@ interface props{
 export function HotelsManagement({amenityData = []} : props) {
   const {adminHotels, fetchHotels} = useHotels()
   const [isHotelDialogOpen, setIsHotelDialogOpen] = useState(false);
-  const [editingHotel, setEditingHotel] = useState<Hotel | null>(null);
+  const [editingHotel, setEditingHotel] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,6 +94,7 @@ export function HotelsManagement({amenityData = []} : props) {
   const [searchCityTerm, setSearchCityTerm] = useState("");
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState<"grid" | "list">("list")
+  const [mode, setMode] = useState<'add' | 'edit' | 'view'>('edit')
   const [totalPages, setTotalPages] = useState(1)
   
   const confirm = useConfirm();
@@ -108,6 +112,8 @@ export function HotelsManagement({amenityData = []} : props) {
     description: '',
     amenities: [] as { id: string; name: string }[],
     images: [] as HotelImage[],
+    facilities: [] as {title: string, items: string[]}[] | undefined,
+    policies: [] as { id: string; title: string; description: string }[]| undefined,
     // roomTypes: [] as RoomType[],
   });
 
@@ -199,6 +205,7 @@ useEffect(() => {
 
   const handleAddHotel = () => {
     setEditingHotel(null);
+    setMode("add")
     setHotelForm({
       name: '',
       location: '',
@@ -206,6 +213,8 @@ useEffect(() => {
       description: '',
       amenities: [],
       images: [],
+      facilities: [],
+      policies: []
       // roomTypes: [{ type: 'Standard', count: 0 }],
     });
 
@@ -226,7 +235,8 @@ useEffect(() => {
   };
 
   const handleEditHotel = (hotel: Hotel) => {
-    setEditingHotel(hotel);
+    setEditingHotel(hotel as any);
+    setMode("edit")
     setHotelForm({
       name: hotel.name,
       location: hotel.location,
@@ -234,6 +244,8 @@ useEffect(() => {
       description: hotel.description,
       amenities: hotel.amenities,
       images: hotel.images,
+      facilities: hotel?.facilities,
+      policies: hotel?.policies,
       // roomTypes: hotel.roomTypes || [{ type: 'Standard', count: 0 }],
     });
     setCountry(hotel.country)
@@ -253,28 +265,28 @@ useEffect(() => {
   };
   
 
-const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {   
-  const files = event.target.files;
-  if (files) {
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        const newImage: HotelImage = {
-          id: Math.random().toString(),   // temporary key
-          url: imageUrl,                  // preview
-          file,                           // keep original File for upload
-          is_primary: hotelForm.images.length === 0, // first image primary
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {   
+    const files = event.target.files;
+    if (files) {
+      Array.from(files).forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          const newImage: HotelImage = {
+            id: Math.random().toString(),   // temporary key
+            url: imageUrl,                  // preview
+            file,                           // keep original File for upload
+            is_primary: hotelForm.images.length === 0, // first image primary
+          };
+          setHotelForm(prev => ({
+            ...prev,
+            images: [...prev.images, newImage]
+          }));
         };
-        setHotelForm(prev => ({
-          ...prev,
-          images: [...prev.images, newImage]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-};
+        reader.readAsDataURL(file);
+      });
+    }
+  };
 
   const setPrimaryImage = (imageId: string) => {
     setHotelForm(prev => ({
@@ -547,10 +559,6 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     return primaryImg?.url || hotel.images[0]?.url || '';
   };
 
-  useEffect(()=>{
-    // setC
-  },[adminHotels])
-
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
@@ -618,7 +626,7 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl">Hotels Management</h2>
         <Button onClick={handleAddHotel} className='cursor-pointer'>
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Add Hotel
         </Button>
       </div>
@@ -852,7 +860,7 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         </div>
       )}
 
-      <Dialog open={isHotelDialogOpen} onOpenChange={setIsHotelDialogOpen}>
+      <Dialog open={false} onOpenChange={setIsHotelDialogOpen}>
         {/* <DialogContent className="max-w-6xl max-h-[90vh]"> */}
         <DialogContent className="w-full max-w-[75vw] sm:max-w-xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
@@ -1155,7 +1163,7 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
                     if (!editingHotel) {
                       handleSaveHotel();
                     } else {
-                      handleUpdateHotel(editingHotel.id);
+                      // handleUpdateHotel(editingHotel.id);
                     }
                   }}
                   className="flex-1"
@@ -1172,6 +1180,15 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      <HotelManagementForm 
+        hotel={editingHotel}
+        setHotel={setEditingHotel}
+        isAddDialogOpen={isHotelDialogOpen}
+        setIsAddDialogOpen={setIsHotelDialogOpen}
+        mode={mode}
+        setFormMode={setMode}
+      />
       
     </div>
   );

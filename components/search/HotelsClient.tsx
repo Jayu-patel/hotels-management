@@ -49,6 +49,7 @@ export default function HotelsPage() {
   const [uniqueAmenities, setUniqueamenities] = useState<string[]>([]);
   const [totalHotels, setTotalHotels] = useState(0)
   const [firstLoad, setFirstLoad] = useState(true);
+  const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
 
   const handleAmenityChange = (amenity: string, checked: boolean) => {
     if (checked) {
@@ -62,6 +63,7 @@ export default function HotelsPage() {
 
   const debouncedSearch = useDebounce(searchTerm, 500);   // 500ms delay
   const debouncedPrice = useDebounce(priceRange, 500);   // 500ms delay
+  const debouncedAmenity = useDebounce(JSON.stringify(selectedAmenities), 500)
 
   const searchParams = useSearchParams();
   const destination = searchParams.get('destination') || '';
@@ -73,12 +75,12 @@ export default function HotelsPage() {
 
   const searchLoad=async()=>{
     const totalGuests = Number(adults) + Number(children)
-    if(destination){
+    if(destination ){
       setSelectedLocation(cap(destination))
     }
     setLoading(true)
     try{
-      const {data, totalCount, totalPages} = await searchHotels({destination, checkIn, checkOut, guestCount: totalGuests, page, size: 3})
+      const {data, totalCount, totalPages} = await searchHotels({destination, checkIn, checkOut, guestCount: totalGuests, page, size: 3, selectedRatings})
       setTotalPages(totalPages)
       setHotels(data)
       setTotalHotels(totalCount)
@@ -94,7 +96,7 @@ export default function HotelsPage() {
 
   const firstFetch=async()=>{
     try{
-      const {data, totalPages, totalCount} = await getHotels({page, size: 3, selectedAmenities, destination: selectedLocation, search: debouncedSearch, sortBy, priceRange: debouncedPrice})
+      const {data, totalPages, totalCount} = await getHotels({page, size: 3, selectedAmenities, destination: selectedLocation, search: debouncedSearch, sortBy, priceRange: debouncedPrice, selectedRatings})
       setTotalPages(totalPages)
       setHotels(data)
       setTotalHotels(totalCount)
@@ -111,18 +113,15 @@ export default function HotelsPage() {
       setUniqueamenities(uniqueAmenities)
     }
     getFilter()
-  },[])
-
-
-  useEffect(()=>{
     searchLoad()
+    scroll({top: 0, behavior: "instant"})
   },[])
 
   useEffect(() => {
     if(!firstLoad){
       firstFetch();
     }
-  }, [page, selectedAmenities, selectedLocation, debouncedSearch, sortBy, debouncedPrice]);
+  }, [page, debouncedAmenity, selectedLocation, debouncedSearch, sortBy, debouncedPrice, selectedRatings]);
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -155,19 +154,21 @@ export default function HotelsPage() {
             {/* Location Filter */}
             <div className="space-y-2">
               <Label>Location</Label>
-              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {uniqueLocations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className='w-full'>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger className='w-full'>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Locations</SelectItem>
+                    {uniqueLocations.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Separator />
@@ -191,22 +192,52 @@ export default function HotelsPage() {
               </div>
             </div>
 
+            <Separator />
+
+            <div className="space-y-2">
+              <Label className='my-2'>Stars Rating</Label>
+              {[5,4,3,2,1].map((count) => (
+                <label key={count} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4"
+                    checked={selectedRatings.includes(count)}
+                    onChange={()=> {
+                      setSelectedRatings((prev) =>
+                            prev.includes(count)
+                              ? prev.filter((c) => c !== count)
+                              : [...prev, count]
+                          )
+                    }}
+                  />
+                  <div className="flex">
+                    {Array.from({ length: count }).map((_, i) => (
+                      <Star key={i} size={18} fill="#facc15" stroke="#facc15" />
+                    ))}
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <Separator />
+
             <div className="space-y-3">
                <Label>Amenities</Label>
                <div className="space-y-2 max-h-40 overflow-y-auto">
                  {uniqueAmenities?.map((amenity,i) => (
                    <div key={i} className="flex items-center space-x-2">
-                     <Checkbox
-                       id={amenity}
-                       className='cursor-pointer'
-                       checked={selectedAmenities.includes(amenity)}
-                       onCheckedChange={(checked) => handleAmenityChange(amenity, checked as boolean)}
-                     />
+                     <input
+                        type="checkbox"
+                        id={amenity}
+                        className="cursor-pointer"
+                        checked={selectedAmenities.includes(amenity)}
+                        onChange={(e) => handleAmenityChange(amenity, e.target.checked)}
+                      />
                      <Label
                        htmlFor={amenity}
                        className="text-sm flex items-center gap-2 cursor-pointer"
                      >
-                       {amenityIcons[amenity]}
+                       {/*{amenityIcons[amenity]}*/}
                        {amenity}
                      </Label>
                    </div>
@@ -336,7 +367,7 @@ export default function HotelsPage() {
         {
           totalPages > 1 ?
           <div className="flex justify-center mt-6 mb-5">
-            <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage)}}/>
+            <PaginationComponent page={page} totalPages={totalPages} onPageChange={(newPage)=>{setPage(newPage); scrollTo({ top: 0, behavior: 'smooth' })}}/>
           </div> :
           <></>
         }

@@ -5,19 +5,17 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Switch } from '../../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Crown, ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { CircleAlert, Crown, Edit, ImageIcon, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { getAmenities } from "@/supabase/hotels";
-
-
-interface ImageUploadRef {
-  uploadImages: () => Promise<{ url: string }[]>;
-}
+import { supabase } from '@/lib/supabase/client';
+import { CitySelector } from '../city-selector';
+import QuillEditor from '@/components/quillEditor'
+import { v4 as uuidv4 } from "uuid";
 
 interface HotelImage {
   id: string;
@@ -31,72 +29,102 @@ interface amenityType{
   name: string
 }
 
-interface VideoUploadRef {
-  uploadVideos: () => Promise<{ url: string }[]>;
-}
-
-interface TourFormProps {
-  tour?: any;
-  setTours: (data: any) => void;
+interface HotelFormProps {
+  hotel?: any;
+  setHotel: (data: any) => void;
   setIsAddDialogOpen: (open: boolean) => void;
   isAddDialogOpen: boolean;
   mode?: 'add' | 'edit' | 'view';
   setFormMode?: (mode: 'add' | 'edit' | 'view') => void;
 }
 
-type Tab = 'basic' | 'details' | 'image' | 'video' | 'options' | 'policies';
-const tabOrder: Tab[] = ['basic', 'details', 'image', 'video', 'options', 'policies'];
+type Policy = {
+  id: string;
+  title: string;
+  description: string;
+};
 
-export function TourManagementForm({
-  tour,
-  setTours,
+type Tab = 'basic' | 'contact' | 'amenities' | 'image' | 'policies';
+const tabOrder: Tab[] = ['basic', 'contact', 'amenities', 'image', 'policies'];
+
+const tabFieldMap: Record<Tab, string[]> = {
+  basic: ['name', 'description', 'city', 'country', 'latitude', 'longitude', 'location', ],
+  contact: ['check_in_time', 'check_out_time', 'phone', 'email'],
+  amenities: ['amenities', 'facilities'],
+  image: ['images'],
+  policies: ['policies'],
+};
+
+export function HotelManagementForm({
+  hotel,
+  setHotel,
   setIsAddDialogOpen,
   isAddDialogOpen,
-  mode = tour ? 'edit' : 'add',
+  mode = hotel ? 'edit' : 'add',
   setFormMode,
-}: TourFormProps) {
-  const [formData, setFormData] = useState({
-    id: tour?.id || '',
-    code: tour?.code || '',
-    name: tour?.name || '',
-    description: tour?.description || '',
-    cityId: tour?.cityId || '',
-    city: tour?.city || '',
-    countryId: tour?.countryId || '',
-    country: tour?.country || '',
-    latitude: tour?.latitude || 0,
-    longitude: tour?.longitude || 0,
-    usefulInfo: tour?.usefulInfo || '',
-    termCondition: tour?.termCondition || '',
-    seoTitle: tour?.seoTitle || '',
-    seoKeyword: tour?.seoKeyword || '',
-    seoDescription: tour?.seoDescription || '',
-    seoData: tour?.seoData || '',
-    isRecommended: tour?.isRecommended || false,
-    status: tour?.status || 'Draft',
-    isActive: tour?.isActive ?? true,
-    currencyId: tour?.currencyId || '',
-    shortName: tour?.shortName || '',
-    noShowValueType: tour?.noShowValueType || '',
-    noShowValue: tour?.noShowValue || '',
-    childPolicy: tour?.childPolicy || '',
-    refundPolicy: tour?.refundPolicy || '',
-    images: tour?.images || [],
-    videos: tour?.videos || [],
-    options: tour?.options ?? [],
-    tourCategories: tour?.tourCategories || [],
-    tourBuyingPriceModel: tour?.tourBuyingPriceModel || [],
-    transferTypes: tour?.transferTypes || [],
-    tourSlabs: tour?.tourSlabs || [],
-    tariffMaster: tour?.tariffMaster || [],
-    cancellationPolicyId: tour?.cancellationPolicyId || '',
-    createdAt: tour?.createdAt || '',
-    updatedAt: tour?.updatedAt || '',
+}: HotelFormProps) {
 
+  const [formData, setFormData] = useState({
+    id: hotel?.id || '',
+    name: hotel?.name || '',
+    description: hotel?.description || '',
+    city: hotel?.destination || '',
+    country: hotel?.country || '',
+    latitude: hotel?.latitude || 0,
+    longitude: hotel?.longitude || 0,
+    images: hotel?.images || [],
+
+    location: hotel?.location || "",
     amenities: [] as { id: string; name: string }[],
-    facilities: [{ title: "", items: [""] }] as {title: string, items: [string]}[]
+    facilities: [{ title: "", items: [""] }] as {title: string, items: string[]}[],
+
+    check_in_time: hotel?.check_in_time || "",
+    check_out_time: hotel?.check_out_time || "",
+    phone: hotel?.phone || "",
+    email: hotel?.email || "",
+
+    termCondition: "",
+    childPolicy: "",
+    refundPolicy: "",
+
+    policies: hotel?.policies || [] as { id: string; title: string; description: string }[],
+
   });
 
+  useEffect(()=>{
+    setFormData({
+      id: hotel?.id || '',
+      name: hotel?.name || '',
+      description: hotel?.description || '',
+      city: hotel?.destination || '',
+      country: hotel?.country || '',
+      latitude: hotel?.latitude || 0,
+      longitude: hotel?.longitude || 0,
+      images: hotel?.images || [],
+
+      location: hotel?.location || "",
+      amenities: hotel?.amenities || [] as { id: string; name: string }[],
+      facilities: hotel?.facilities as {title: string, items: string[]}[],
+
+      check_in_time: hotel?.check_in_time || "",
+      check_out_time: hotel?.check_out_time || "",
+      phone: hotel?.phone || "",
+      email: hotel?.email || "",
+
+      termCondition: "",
+      childPolicy: "",
+      refundPolicy: "",
+
+      policies: hotel?.policies || [] as { id: string; title: string; description: string }[],
+    })
+
+    if(hotel?.facilities){
+      setFacilities(hotel.facilities)
+    }
+
+  },[hotel])
+
+  const [loading, setLoading] = useState(false)
   const [amenitiesOptions, setAmenitiesOptions] = useState<{ label: string; value: string }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<Tab>('basic');
@@ -107,9 +135,7 @@ export function TourManagementForm({
   const hasNext = currentIndex < tabOrder.length - 1;
   const [facilities, setFacilities] = useState([{ title: "", items: [""] }])
 
-  // Refs with explicit types
-  const imageUploadRef = useRef<ImageUploadRef>(null);
-  const videoUploadRef = useRef<VideoUploadRef>(null);
+  const [isFacilityEdited, setFacilityEdited] = useState(false)
 
   const getAllAmenities=async()=>{
     try{
@@ -124,7 +150,8 @@ export function TourManagementForm({
   }
   
   useEffect(()=>{
-    getAllAmenities()
+    getAllAmenities();
+    getCategories();
   }, [])
 
   const goToPrevious = () => {
@@ -135,43 +162,315 @@ export function TourManagementForm({
     if (hasNext) setActiveTab(tabOrder[currentIndex + 1]);
   };
 
-  const selectedCategories = (value: any) => {
-    setFormData((prev: any) => ({ ...prev, tourCategories: value }));
-  };
-
-
   const getCategories = async () => {
   };
 
-  useEffect(() => {
-    getCategories();
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isValid = validateFields();
+    if (!isValid){
+      toast.error("Please fill required fields!")
+      return;
+    } 
+
     try {
-      let updatedFormData = { ...formData };
+      if(mode == "add"){
+        handleSaveHotel()
+      }
+      else if(mode == "edit"){
+        handleUpdateHotel()
+      }
 
-      // // Upload images
-      // if (imageUploadRef.current) {
-      //   const uploadedImages = await imageUploadRef.current.uploadImages();
-      //   updatedFormData = { ...updatedFormData, images: uploadedImages };
-      // }
-
-      // // Upload videos
-      // if (videoUploadRef.current) {
-      //   const uploadedVideos = await videoUploadRef.current.uploadVideos();
-      //   updatedFormData = { ...updatedFormData, videos: uploadedVideos };
-      // }
-      const isValid = validateFields();
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to save tour');
+      toast.error('Failed to add new hotel');
+    }
+  };
+
+  const handleSaveHotel = async () => {
+    if (formData.images.length === 0) {
+      toast.error("Please add at least one image");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: hotelData, error: hotelError } = await supabase
+        .from("hotels")
+        .insert({
+          name: formData.name,
+          address: formData.location,
+          destination: formData.city,
+          description: formData.description,
+          status: "active",
+          star_rating: 1,
+          review_count: 1,
+          country: formData.country,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          facilities: facilities,
+          policies: formData.policies,
+          check_in_time: formData.check_in_time,
+          check_out_time: formData.check_out_time,
+          phone: formData.phone,
+          email: formData.email,
+        })
+        .select("id")
+        .single();
+
+      if (hotelError) throw hotelError;
+
+      let hotelId = hotelData?.id;
+
+      // 2️⃣ Upload images to Supabase Storage
+      const uploadedImages = await Promise.all(
+        formData.images.map(async (img: any) => {
+          if (!img.file) return img; // already has URL, skip upload
+
+          const fileExt = img.file.name.split(".").pop();
+          const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+          const { data, error: uploadError } = await supabase.storage
+            .from("hotels")
+            .upload(fileName, img.file);
+
+          if (uploadError) throw uploadError;
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("hotels").getPublicUrl(fileName);
+
+          return {
+            hotel_id: hotelId,
+            image_url: publicUrl,
+            is_primary: img.is_primary,
+          };
+        })
+      );
+
+      // 3️⃣ Insert images
+      const { error: imagesError } = await supabase
+        .from("hotel_images")
+        .upsert(uploadedImages);
+
+      if (imagesError) throw imagesError;
+
+      // 4️⃣ Insert hotel amenities
+      const amenitiesInsert = formData.amenities.map((amenityId) => ({
+        hotel_id: hotelId,
+        amenity_id: amenityId?.id,
+      }));
+
+      if (amenitiesInsert.length > 0) {
+        const { error: amenitiesError } = await supabase
+          .from("hotel_amenities")
+          .upsert(amenitiesInsert);
+
+        if (amenitiesError) throw amenitiesError;
+      }
+
+      toast.success("Hotel added successfully");
+      // setIsHotelDialogOpen(false);
+
+    } catch (error: any) {
+      toast.error("Error saving hotel: " + error.message);
+    } finally {
+      setLoading(false);
+      setIsAddDialogOpen(false);
+      setActiveTab("basic")
+    }
+  };
+
+  const handleUpdateHotel = async () => {
+    if (formData.images.length === 0) {
+      toast.error("Please add at least one image");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1️⃣ Update hotel basic info
+      const { error: updateError } = await supabase
+        .from("hotels")
+        .update({
+          name: formData.name,
+          address: formData.location,
+          destination: formData.city,
+          description: formData.description,
+          country: formData.country,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          facilities: facilities,
+          policies: formData.policies,
+          check_in_time: formData.check_in_time,
+          check_out_time: formData.check_out_time,
+          phone: formData.phone,
+          email: formData.email,
+        })
+        .eq("id", formData.id);
+
+      if (updateError) throw updateError;
+
+      // 2️⃣ Get existing images
+      const { data: existingImages, error: fetchImagesError } = await supabase
+        .from("hotel_images")
+        .select("*")
+        .eq("hotel_id", formData.id);
+
+      if (fetchImagesError) throw fetchImagesError;
+
+      const existingImageUrls = existingImages.map((img) => img.image_url);
+
+      // 3️⃣ Find removed images
+      const removedImages = existingImages.filter(
+        (img) =>
+          !formData.images.some((formImg: any) => formImg.url === img.image_url)
+      );
+
+      // Delete removed images from DB
+      if (removedImages.length > 0) {
+        const { error: deleteImagesError } = await supabase
+          .from("hotel_images")
+          .delete()
+          .in(
+            "id",
+            removedImages.map((img) => img.id)
+          );
+
+        if (deleteImagesError) throw deleteImagesError;
+      }
+
+      // 4️⃣ Update primary status of existing images
+      const imagesToUpdate = formData.images.filter((img: any) =>
+        existingImageUrls.includes(img.url)
+      );
+
+      for (const img of imagesToUpdate) {
+        const { error: updateImageError } = await supabase
+          .from("hotel_images")
+          .update({ is_primary: img.is_primary })
+          .eq("hotel_id", formData.id)
+          .eq("image_url", img.url);
+
+        if (updateImageError) throw updateImageError;
+      }
+
+      // 5️⃣ Handle new image uploads
+      const newImagesToInsert = await Promise.all(
+        formData.images
+          .filter((img: any) => !existingImageUrls.includes(img.url))
+          .map(async (img: any) => {
+            let imageUrl = img.url;
+
+            if (img.file) {
+              const fileExt = img.file.name.split(".").pop();
+              const fileName = `${crypto.randomUUID()}.${fileExt}`;
+              const filePath = `hotel-images/${fileName}`;
+
+              const { error: uploadError } = await supabase.storage
+                .from("hotels")
+                .upload(filePath, img.file);
+
+              if (uploadError) throw uploadError;
+
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("hotels").getPublicUrl(filePath);
+
+              imageUrl = publicUrl;
+            }
+
+            return {
+              hotel_id: formData.id,
+              image_url: imageUrl,
+              is_primary: img.is_primary,
+            };
+          })
+      );
+
+      if (newImagesToInsert.length > 0) {
+        const { error: insertImagesError } = await supabase
+          .from("hotel_images")
+          .insert(newImagesToInsert);
+        if (insertImagesError) throw insertImagesError;
+      }
+
+      // 6️⃣ Update amenities: delete old ones and insert new
+      await supabase.from("hotel_amenities").delete().eq("hotel_id", formData.id);
+
+      const amenitiesInsert = formData.amenities.map((amenity) => ({
+        hotel_id: formData.id,
+        amenity_id: amenity.id,
+      }));
+
+      if (amenitiesInsert.length > 0) {
+        const { error: insertAmenitiesError } = await supabase
+          .from("hotel_amenities")
+          .insert(amenitiesInsert);
+
+        if (insertAmenitiesError) throw insertAmenitiesError;
+      }
+
+      toast.success("Hotel updated successfully");
+      // setIsHotelDialogOpen(false);
+    } catch (error: any) {
+      console.error(error.message);
+      toast.error("Error updating hotel: " + error.message);
+    } finally {
+      setLoading(false);
+      setIsAddDialogOpen(false);
+      setActiveTab("basic")
     }
   };
 
   const handleClose = () => {
     setIsAddDialogOpen(false);
+    setHotel(null)
+    setFacilities([{ title: "", items: [""] }])
+    setActiveTab("basic")
+
+    setFormData({
+      id: '',
+      name: '',
+      description: '',
+      city: '',
+      country: '',
+      latitude: 0,
+      longitude: 0,
+      images: [],
+
+      location: "",
+      amenities: [] as { id: string; name: string }[],
+      facilities: [] as {title: string, items: string[]}[],
+
+      check_in_time: "",
+      check_out_time: "",
+      phone: "",
+      email: "",
+
+      termCondition: "",
+      childPolicy: "",
+      refundPolicy: "",
+
+      policies: [] as { id: string; title: string; description: string }[],
+    })
+
+    setErrors({
+      name: '',
+      amenities: '',
+      description: '',
+      city: '',
+      country: '',
+      latitude: '',
+      longitude: '',
+      images: '',
+      location: '',
+      facilities: '',
+      policies: '',
+      check_in_time: '',
+      check_out_time: '',
+      phone: '',
+      email: '',
+    })
   };
 
   const getTitle = () => {
@@ -183,32 +482,138 @@ export function TourManagementForm({
       case 'add':
         return 'Add New Hotel';
       default:
-        return tour ? 'Edit Hotel' : 'Add New Hotel';
+        return hotel ? 'Edit Hotel' : 'Add New Hotel';
     }
   };
 
   const [errors, setErrors] = useState({
     name: '',
-    tourCategories: "",
-    amenities: "",
+    amenities: '',
+    description: '',
+    city: '',
+    country: '',
+    latitude: '',
+    longitude: '',
+    images: '',
+    location: '',
+    facilities: '',
+    policies: '',
+    check_in_time: '',
+    check_out_time: '',
+    phone: '',
+    email: '',
   });
-  console.log("errors",errors)
+
+  const isQuillEmpty = (html = '') => {
+    if (!html) return true;
+    const withoutTags = html.replace(/<[^>]*>/g, '');
+    const withoutEntities = withoutTags.replace(/&nbsp;|&#160;/g, ' ');
+    return withoutEntities.replace(/\s+/g, '') === '';
+  };
 
   const validateFields = () => {
     const newErrors: typeof errors = {
       name: '',
-      tourCategories: "",
-      amenities: ""
+      amenities: '',
+      description: '',
+      city: '',
+      country: '',
+      latitude: '',
+      longitude: '',
+      images: '',
+      location: '',
+      facilities: '',
+      policies: '',
+      check_in_time: '',
+      check_out_time: '',
+      phone: '',
+      email: '',
     };
 
-    if (!formData?.name?.trim()) {
-      newErrors.name = 'Please Enter name';
+    // if (!formData?.name?.trim()) {
+    //   newErrors.name = 'Please enter hotel name';
+    // }
+
+    // if (formData.amenities.length === 0) {
+    //   newErrors.amenities = 'Select at least one amenity';
+    // }
+    if (!formData.name.trim()) newErrors.name = 'Please enter hotel name';
+    if (isQuillEmpty(formData.description)) newErrors.description = 'Please enter description';
+    if (!formData.city.trim()) newErrors.city = 'Please enter city';
+    if (!formData.country.trim()) newErrors.country = 'Please enter country';
+    if (!formData.location.trim()) newErrors.location = 'Please enter location';
+
+    if (!formData.latitude || isNaN(formData.latitude))
+      newErrors.latitude = 'Enter valid latitude';
+    if (!formData.longitude || isNaN(formData.longitude))
+      newErrors.longitude = 'Enter valid longitude';
+
+    if (!formData.images.length) newErrors.images = 'Add at least one image';
+    if (!formData.amenities.length) newErrors.amenities = 'Select at least one amenity';
+
+    if (
+      !formData?.facilities?.length ||
+      formData?.facilities?.some(
+        (f) =>
+          !f.title.trim() ||
+          !f.items.length ||
+          f.items.some((i) => !i.trim())
+      )
+    ) {
+      newErrors.facilities = 'Add valid facilities with title and items';
     }
-    if (!formData?.tourCategories) {
-      newErrors.tourCategories = 'Please select tourCategories';
+    
+    if (isFacilityEdited) {
+      newErrors.facilities = 'Save facilities before submitting the form.';
+    }
+
+    if (
+      !formData?.policies?.length ||
+      formData?.policies?.some(
+        (p: any) => !p.title.trim() || !p.description.trim()
+      )
+    ) {
+      newErrors.policies = 'Add valid policies with title and description';
+    }
+
+    if (!formData.check_in_time.trim())
+      newErrors.check_in_time = 'Please enter check-in time';
+
+    if (!formData.check_out_time.trim())
+      newErrors.check_out_time = 'Please enter check-out time';
+
+    // Optional: check that checkout is after checkin
+    if (
+      formData.check_in_time &&
+      formData.check_out_time &&
+      formData.check_in_time >= formData.check_out_time
+    ) {
+      newErrors.check_out_time = 'Check-out time must be later than check-in time';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Please enter email';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Enter a valid email';
+    }
+
+    // Phone validation (10–15 digits)
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Please enter phone number';
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = 'Enter a valid phone number';
     }
 
     setErrors(newErrors);
+
+    for (const tab of tabOrder) {
+      const fields = tabFieldMap[tab];
+      if (fields.some((f) => Boolean((newErrors as any)[f]))) {
+        setActiveTab(tab);
+        break;
+      }
+    }
 
     return Object.values(newErrors).every(error => error === '');
   };
@@ -259,35 +664,126 @@ export function TourManagementForm({
     });
   };
 
-  //facilities
-const addGroup = () => setFacilities([...facilities, { title: "", items: [""] }])
-const removeGroup = (i: number) => setFacilities(facilities.filter((_, x) => x !== i))
-const updateTitle = (i: number, v: string) => {
-  const arr = [...facilities]
-  arr[i].title = v
-  setFacilities(arr)
-}
-const addItem = (i: number) => {
-  const arr = [...facilities]
-  arr[i].items.push("")
-  setFacilities(arr)
-}
-const updateItem = (gi: number, ii: number, v: string) => {
-  const arr = [...facilities]
-  arr[gi].items[ii] = v
-  setFacilities(arr)
-}
-const removeItem = (gi: number, ii: number) => {
-  const arr = [...facilities]
-  arr[gi].items.splice(ii, 1)
-  setFacilities(arr)
-}
-const handleSave = async () => {
-//   await addOrUpdateFacilities(hotelId, facilities)
+  const addGroup = () => {
+    if (facilities.length === 0) {
+      setFacilities([{ title: "", items: [""] }]);
+      setFacilityEdited(true)
+      return;
+    }
+    
+    const lastFacility = facilities[facilities.length - 1];
+    const isTitleEmpty = lastFacility.title.trim() === "";
+    const areItemsEmpty = lastFacility.items.some(item => item.trim() === "");
+    
+    if (isTitleEmpty || areItemsEmpty) {
+      toast.error("Please fill the title and all items of the last group before adding a new one.");
+      return;
+    }
+    
+    setFacilities([...facilities, { title: "", items: [""] }]);
+    setFacilityEdited(true)
+  };
+
+
+  const removeGroup = (i: number) =>{
+    setFacilities(facilities.filter((_, x) => x !== i));
+    setFacilityEdited(true)
+  } 
+
+  const updateTitle = (i: number, v: string) => {
+    const arr = [...facilities];
+    arr[i].title = v;
+    setFacilities(arr);
+  };
+
+  const addItem = (i: number) => {
+    const arr = [...facilities];
+    const items = arr[i].items;
+
+    if (items.length === 0) {
+      items.push("");
+      setFacilities(arr);
+      setFacilityEdited(true);
+      return;
+    }
+
+    const lastItem = items[items.length - 1];
+
+    if (!lastItem || lastItem.trim() === "") {
+      toast.error("Please fill the last item before adding a new one.");
+      return;
+    }
+
+    items.push("");
+    setFacilities(arr);
+    setFacilityEdited(true);
+  };
+
+
+  const updateItem = (gi: number, ii: number, v: string) => {
+    const arr = [...facilities];
+    arr[gi].items[ii] = v;
+    setFacilities(arr);
+  };
+
+  const removeItem = (gi: number, ii: number) => {
+    const arr = [...facilities];
+    arr[gi].items.splice(ii, 1);
+    setFacilities(arr);
+    setFacilityEdited(true)
+  };
+
+  const validateFacilities = () => {
+    for (let i = 0; i < facilities.length; i++) {
+      const group = facilities[i];
+      if (!group.title.trim()) {
+        toast.error(`Facility group #${i + 1} title cannot be empty`);
+        return false;
+      }
+      for (let j = 0; j < group.items.length; j++) {
+        if (!group.items[j].trim()) {
+          toast.error(`Facility group #${i + 1}, item #${j + 1} cannot be empty`);
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateFacilities()) return;
+    setFormData({ ...formData, facilities });
+    toast.success("Facilities saved successfully");
+    setFacilityEdited(false)
+  };
+
+  const handleChangeQuill = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+const [isAdding, setIsAdding] = useState(false);
+const [editingId, setEditingId] = useState<string | null>(null);
+const [policyForm, setPolicyForm] = useState({ title: "", description: "" });
+
+function handleEditPolicy(id: string) {
+  const policy = formData.policies.find((x: any) => x.id === id);
+  if (!policy) return;
+  setPolicyForm({ title: policy.title, description: policy.description });
+  setIsAdding(true);
+  setEditingId(id);
 }
 
   return (
-    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+    <Dialog
+      open={isAddDialogOpen}
+      onOpenChange={(open) => {
+        setIsAddDialogOpen(open);
+        if (!open) handleClose();
+      }}
+    >
       <DialogContent className="max-w-[90vw] w-full lg:max-w-[80vw] h-[90vh] max-h-[90vh] overflow-hidden">
         <div className="h-full overflow-y-auto p-2">
           <DialogHeader>
@@ -318,11 +814,18 @@ const handleSave = async () => {
                   >
                     Basic Info
                   </TabsTrigger>
+
                   <TabsTrigger
-                    value="details"
+                    value="contact"
                     className="text-sm font-medium whitespace-nowrap data-[state=active]:bg-[var(--primary)] data-[state=active]:text-white"
                   >
-                    Details
+                    Contact
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="amenities"
+                    className="text-sm font-medium whitespace-nowrap data-[state=active]:bg-[var(--primary)] data-[state=active]:text-white"
+                  >
+                    Amenities
                   </TabsTrigger>
                   <TabsTrigger
                     value="image"
@@ -331,12 +834,13 @@ const handleSave = async () => {
                     Images
                   </TabsTrigger>
 
-                  <TabsTrigger
+                  {/* <TabsTrigger
                     value="options"
                     className="text-sm font-medium whitespace-nowrap data-[state=active]:bg-[var(--primary)] data-[state=active]:text-white"
                   >
                     Options
-                  </TabsTrigger>
+                  </TabsTrigger> */}
+
                   <TabsTrigger
                     value="policies"
                     className="text-sm font-medium whitespace-nowrap data-[state=active]:bg-[var(--primary)] data-[state=active]:text-white"
@@ -358,30 +862,40 @@ const handleSave = async () => {
                           }
                           disabled={isViewMode}
                           required={!isViewMode}
-                          placeholder='Oceanview Paradise Hotel'
+                          placeholder="Oceanview Paradise Hotel"
                           className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
                         />
                         {errors?.name && (
                           <p className="text-sm text-red-600">{errors?.name}</p>
                         )}
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
+                        <Label htmlFor="location">Location</Label>
                         <Input
-                          id="city"
-                          value={formData.city}
+                          id="location"
+                          value={formData.location}
                           onChange={(e) =>
                             isEditableMode &&
-                            setFormData({ ...formData, city: e.target.value })
+                            setFormData({
+                              ...formData,
+                              location: e.target.value,
+                            })
                           }
                           disabled={isViewMode}
-                          placeholder='Mumbai'
+                          placeholder="Street 1, Sector 28"
                           className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
                         />
+                        {errors?.location && (
+                          <p className="text-sm text-red-600">
+                            {errors?.location}
+                          </p>
+                        )}
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="country">Country</Label>
-                        <Input
+                        <Label htmlFor="city">City</Label>
+                        {/* <Input
                           id="country"
                           value={formData.country}
                           onChange={(e) =>
@@ -392,29 +906,80 @@ const handleSave = async () => {
                             })
                           }
                           disabled={isViewMode}
-                          placeholder='India'
+                          placeholder="India"
                           className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                        /> */}
+                        <CitySelector
+                          city={formData.city}
+                          setCity={(val) =>
+                            setFormData((prev) => ({ ...prev, city: val }))
+                          }
+                          country={formData.country}
+                          setCountry={(val) =>
+                            setFormData((prev) => ({ ...prev, country: val }))
+                          }
                         />
+                        {errors?.city && (
+                          <p className="text-sm text-red-600">{errors?.city}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="country">Country</Label>
+                        {/* <Input
+                          id="city"
+                          value={formData.city}
+                          onChange={(e) =>
+                            isEditableMode &&
+                            setFormData({ ...formData, city: e.target.value })
+                          }
+                          disabled={isViewMode}
+                          placeholder="Mumbai"
+                          className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                        /> */}
+
+                        <input
+                          type="text"
+                          value={formData.country}
+                          placeholder="Country"
+                          disabled
+                          className="w-full px-2 py-1 border rounded bg-gray-100 cursor-not-allowed"
+                        />
+                        {errors?.country && (
+                          <p className="text-sm text-red-600">
+                            {errors?.country}
+                          </p>
+                        )}
                       </div>
                     </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="description">Description</Label>
-                      <Textarea
+                      {/* <Textarea
                         id="description"
                         value={formData.description}
                         onChange={(e) =>
                           isEditableMode &&
-                          setFormData({
-                            ...formData,
-                            description: e.target.value,
-                          })
+                          setFormData({...formData, description: e.target.value})
                         }
                         disabled={isViewMode}
-                        placeholder='Describe the hotel, its amenities, and unique features'
+                        placeholder="Describe the hotel, its amenities, and unique features"
                         rows={4}
                         className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                      /> */}
+                      <QuillEditor
+                        value={formData.description}
+                        onChange={(content) =>
+                          setFormData({ ...formData, description: content })
+                        }
                       />
+                      {errors?.description && (
+                        <p className="text-sm text-red-600">
+                          {errors?.description}
+                        </p>
+                      )}
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="latitude">Latitude</Label>
@@ -434,6 +999,11 @@ const handleSave = async () => {
                           disabled={isViewMode}
                           className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
                         />
+                        {errors?.latitude && (
+                          <p className="text-sm text-red-600">
+                            {errors?.latitude}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="longitude">Longitude</Label>
@@ -453,46 +1023,153 @@ const handleSave = async () => {
                           disabled={isViewMode}
                           className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
                         />
+                        {errors?.longitude && (
+                          <p className="text-sm text-red-600">
+                            {errors?.longitude}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="details" className="space-y-4 mt-0">
-                    <div className="space-y-2">
-                      <Label htmlFor="hotel-amenities">Amenities</Label>
-                      <Select
-                        value={undefined}
-                        onValueChange={(value) => {
-                          const selectedAmenity = amenitiesOptions.find(
-                            (a) => a.value === value
-                          );
-                          if (!selectedAmenity) return;
-                          if (!formData.amenities.some((a) => a.id === value)) {
+                  <TabsContent value="contact" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Check-in Time */}
+                      <div className="space-y-2">
+                        <Label htmlFor="check_in_time">Check-in Time</Label>
+                        <Input
+                          id="check_in_time"
+                          type="time"
+                          value={formData.check_in_time ?? ""}
+                          onChange={(e) =>
+                            isEditableMode &&
                             setFormData({
                               ...formData,
-                              // amenities: [...roomForm.amenities, value],
-                              amenities: [
-                                ...formData.amenities,
-                                { id: value, name: selectedAmenity.label },
-                              ],
-                            });
+                              check_in_time: e.target.value,
+                            })
                           }
-                          setErrors((prev) => ({ ...prev, amenities: "" }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select amenities" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {amenitiesOptions?.map((e, i) => {
-                            return (
-                              <SelectItem key={i} value={e.value}>
-                                {e.label}
-                              </SelectItem>
+                          disabled={isViewMode}
+                          placeholder="15:00"
+                          className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                        />
+                        {errors?.check_in_time && (
+                          <p className="text-sm text-red-600">
+                            {errors?.check_in_time}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Check-out Time */}
+                      <div className="space-y-2">
+                        <Label htmlFor="check_out_time">Check-out Time</Label>
+                        <Input
+                          id="check_out_time"
+                          type="time"
+                          value={formData.check_out_time ?? ""}
+                          onChange={(e) =>
+                            isEditableMode &&
+                            setFormData({
+                              ...formData,
+                              check_out_time: e.target.value,
+                            })
+                          }
+                          disabled={isViewMode}
+                          placeholder="11:00"
+                          className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                        />
+                        {errors?.check_out_time && (
+                          <p className="text-sm text-red-600">
+                            {errors?.check_out_time}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Phone Number */}
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={formData.phone ?? ""}
+                          onChange={(e) =>
+                            isEditableMode &&
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
+                          disabled={isViewMode}
+                          placeholder="+1 (555) 123-4567"
+                          className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                        />
+                        {errors?.phone && (
+                          <p className="text-sm text-red-600">
+                            {errors?.phone}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email ?? ""}
+                          onChange={(e) =>
+                            isEditableMode &&
+                            setFormData({ ...formData, email: e.target.value })
+                          }
+                          disabled={isViewMode}
+                          placeholder="info@grandluxuryhotel.com"
+                          className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                        />
+                        {errors?.email && (
+                          <p className="text-sm text-red-600">
+                            {errors?.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="amenities" className="space-y-4 mt-0">
+                    <div className="space-y-2">
+                      <Label htmlFor="hotel-amenities">Amenities</Label>
+                      <div className="max-w-80">
+                        <Select
+                          value={undefined}
+                          onValueChange={(value) => {
+                            const selectedAmenity = amenitiesOptions.find(
+                              (a) => a.value === value
                             );
-                          })}
-                        </SelectContent>
-                      </Select>
+                            if (!selectedAmenity) return;
+                            if (
+                              !formData.amenities.some((a) => a.id === value)
+                            ) {
+                              setFormData({
+                                ...formData,
+                                // amenities: [...roomForm.amenities, value],
+                                amenities: [
+                                  ...formData.amenities,
+                                  { id: value, name: selectedAmenity.label },
+                                ],
+                              });
+                            }
+                            setErrors((prev) => ({ ...prev, amenities: "" }));
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select amenities" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {amenitiesOptions?.map((e, i) => {
+                              return (
+                                <SelectItem key={i} value={e.value}>
+                                  {e.label}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
                       {/* Show selected amenities */}
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -534,9 +1211,11 @@ const handleSave = async () => {
                             <Input
                               placeholder="Facility Title (e.g. Parking)"
                               value={group.title}
-                              onChange={(e) =>
+                              onChange={(e) =>{
+                                setFacilityEdited(true)
                                 updateTitle(groupIndex, e.target.value)
-                              }
+                              }}
+                              className="text-lg md:text-xl font-semibold"
                             />
                             <Button
                               size="icon"
@@ -556,13 +1235,14 @@ const handleSave = async () => {
                                 <Input
                                   placeholder="Item (e.g. Valet parking)"
                                   value={item}
-                                  onChange={(e) =>
+                                  onChange={(e) =>{
+                                    setFacilityEdited(true)
                                     updateItem(
                                       groupIndex,
                                       itemIndex,
                                       e.target.value
                                     )
-                                  }
+                                  }}
                                 />
                                 <Button
                                   size="icon"
@@ -587,6 +1267,14 @@ const handleSave = async () => {
                         </Card>
                       ))}
 
+                      {
+                        isFacilityEdited &&
+                        <div className='flex gap-1 items-center'>
+                          <p className='text-sm text-gray-500 font-semibold ml-2'>Click the Save button to apply your changes</p>
+                          <CircleAlert className='w-5 h-5 text-red-500' />
+                        </div>
+                      }
+
                       <div className="flex gap-2">
                         <Button
                           onClick={addGroup}
@@ -595,7 +1283,7 @@ const handleSave = async () => {
                           <Plus size={16} /> Add Facility Group
                         </Button>
 
-                        {facilities.length > 0 && (
+                        {facilities.length > 0 && isFacilityEdited && (
                           <Button
                             onClick={handleSave}
                             className="flex items-center gap-1"
@@ -604,8 +1292,12 @@ const handleSave = async () => {
                           </Button>
                         )}
                       </div>
+                      {errors?.facilities && (
+                        <p className="text-sm text-red-600">
+                          {errors?.facilities}
+                        </p>
+                      )}
                     </div>
-
                   </TabsContent>
 
                   <TabsContent value="image" className="space-y-4 mt-0">
@@ -644,53 +1336,62 @@ const handleSave = async () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {formData.images.map((image: any) => (
-                            <Card key={image.id} className="overflow-hidden">
-                              <div className="aspect-video relative">
-                                <img
-                                  src={image.url}
-                                  alt={"Hotel image"}
-                                  className="w-full h-full object-cover"
-                                />
-                                {image.is_primary && (
-                                  <Badge className="absolute top-2 left-2 bg-yellow-500">
-                                    <Crown className="w-3 h-3 mr-1" />
-                                    Primary
-                                  </Badge>
-                                )}
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  className="absolute top-2 right-2"
-                                  onClick={() => removeImage(image.id)}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                              <CardContent className="p-3">
-                                <div className="space-y-2">
-                                  {!image.is_primary && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setPrimaryImage(image.id)}
-                                      className="w-full"
-                                    >
-                                      Set as Primary
-                                    </Button>
+                          {[...formData.images]
+                            .sort((a: any, b: any) =>
+                              a.is_primary ? -1 : b.is_primary ? 1 : 0
+                            )
+                            .map((image: any) => (
+                              <Card key={image.id} className="overflow-hidden">
+                                <div className="aspect-video relative">
+                                  <img
+                                    src={image.url}
+                                    alt={"Hotel image"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {image.is_primary && (
+                                    <Badge className="absolute top-2 left-2 bg-yellow-500">
+                                      <Crown className="w-3 h-3 mr-1" />
+                                      Primary
+                                    </Badge>
                                   )}
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute top-2 right-2"
+                                    onClick={() => removeImage(image.id)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
                                 </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                                <CardContent className="p-3">
+                                  <div className="space-y-2">
+                                    {!image.is_primary && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          setPrimaryImage(image.id)
+                                        }
+                                        className="w-full"
+                                      >
+                                        Set as Primary
+                                      </Button>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                         </div>
+                      )}
+                      {errors?.images && (
+                        <p className="text-sm text-red-600">{errors?.images}</p>
                       )}
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="options" className="space-y-4 mt-0">
+                  {/* <TabsContent value="options" className="space-y-4 mt-0">
                     <div className="space-y-4">
                       {formData?.options?.map((option: any, index: number) => (
                         <div
@@ -765,61 +1466,221 @@ const handleSave = async () => {
                         + Add Option
                       </Button>
                     </div>
-                  </TabsContent>
+                  </TabsContent> */}
 
                   <TabsContent value="policies" className="space-y-4 mt-0">
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="termCondition">Terms & Conditions</Label>
-                      <Textarea
-                        id="termCondition"
-                        value={formData.termCondition}
-                        onChange={(e) =>
-                          isEditableMode &&
-                          setFormData({
-                            ...formData,
-                            termCondition: e.target.value,
-                          })
-                        }
-                        disabled={isViewMode}
-                        rows={3}
-                        className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="childPolicy">Child Policy</Label>
-                      <Textarea
-                        id="childPolicy"
-                        value={formData.childPolicy}
-                        onChange={(e) =>
-                          isEditableMode &&
-                          setFormData({
-                            ...formData,
-                            childPolicy: e.target.value,
-                          })
-                        }
-                        disabled={isViewMode}
-                        rows={3}
-                        className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="refundPolicy">Refund Policy</Label>
-                      <Textarea
-                        id="refundPolicy"
-                        value={formData.refundPolicy}
-                        onChange={(e) =>
-                          isEditableMode &&
-                          setFormData({
-                            ...formData,
-                            refundPolicy: e.target.value,
-                          })
-                        }
-                        disabled={isViewMode}
-                        rows={3}
-                        className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
-                      />
+                      <QuillEditor value={formData.termCondition} onChange={(content)=> handleChangeQuill("termCondition", content)}/>
+                    </div> */}
+
+                    <div>
+                      {formData.policies?.length === 0 && (
+                        <div className="mt-6 flex flex-col items-center justify-center border border-dashed rounded-xl py-10 text-gray-500 bg-gray-50">
+                          <p className="text-md font-medium">
+                            No hotel policies added yet
+                          </p>
+                          <p className="text-sm text-gray-400 mt-1">
+                            Click below to add your first policy
+                          </p>
+                        </div>
+                      )}
+
+                      {formData.policies.length > 0 && (
+                        <div className="mt-6">
+                          <h3 className="text-lg font-semibold mb-3 border-b pb-2">
+                            Hotel Policies
+                          </h3>
+                          <div className="space-y-3">
+                            {formData.policies.map((p: any) => (
+                              <div
+                                key={p.id}
+                                className="rounded-xl border p-4 shadow-sm bg-white hover:shadow-md transition-all"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className="font-semibold text-lg text-gray-800">
+                                      {p.title}
+                                    </p>
+                                    <div
+                                      className="prose prose-sm text-gray-600 mt-1 max-w-none [&_ol]:list-disc [&_ol_li]:ml-4"
+                                      dangerouslySetInnerHTML={{
+                                        __html: p.description,
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex gap-2 ml-4">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEditPolicy(p.id)}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() =>
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          policies: prev.policies.filter(
+                                            (x: any) => x.id !== p.id
+                                          ),
+                                        }))
+                                      }
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {!isAdding && (
+                        <Button
+                          className="my-4"
+                          onClick={() => setIsAdding(true)}
+                        >
+                          Add New
+                        </Button>
+                      )}
+
+                      {isAdding && (
+                        <div className="space-y-2 mt-4 border p-3 rounded-lg">
+                          <Label htmlFor="title" className="text-lg">
+                            Policy Title
+                          </Label>
+                          <Input
+                            id="title"
+                            value={policyForm.title}
+                            placeholder="Enter title"
+                            onChange={(e) =>
+                              setPolicyForm({
+                                ...policyForm,
+                                title: e.target.value,
+                              })
+                            }
+                            className="border-2 border-gray-300 bg-gray-50 focus:border-primary focus:ring-0 text-gray-800"
+                          />
+
+                          <Label htmlFor="description" className="text-lg">
+                            Description
+                          </Label>
+                          <QuillEditor
+                            value={policyForm.description}
+                            placeholder="Enter description"
+                            onChange={(content) =>
+                              setPolicyForm({
+                                ...policyForm,
+                                description: content,
+                              })
+                            }
+                          />
+
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              onClick={() => {
+                                if (!policyForm.title.trim()) {
+                                  toast.error("Policy title is required");
+                                  return;
+                                }
+                                const plainText = policyForm.description
+                                  .replace(/<[^>]*>/g, "")
+                                  .trim();
+                                if (!plainText) {
+                                  toast.error("Policy description is required");
+                                  return;
+                                }
+
+                                if (editingId) {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    policies: prev.policies.map((p: any) =>
+                                      p.id === editingId
+                                        ? {
+                                            ...p,
+                                            title: policyForm.title,
+                                            description: policyForm.description,
+                                          }
+                                        : p
+                                    ),
+                                  }));
+                                  setEditingId(null);
+                                } else {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    policies: [
+                                      ...prev.policies,
+                                      {
+                                        id: uuidv4(),
+                                        title: policyForm.title,
+                                        description: policyForm.description,
+                                      },
+                                    ],
+                                  }));
+                                }
+
+                                setIsAdding(false);
+                                setPolicyForm({ title: "", description: "" });
+                              }}
+                            >
+                              Save
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setIsAdding(false);
+                                setPolicyForm({ title: "", description: "" });
+                                setEditingId(null);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {errors?.policies && (
+                        <p className="text-sm text-red-600">
+                          {errors?.policies}
+                        </p>
+                      )}
                     </div>
                   </TabsContent>
+                  {/* 
+                  <TabsContent value='policies' className='space-y-4 mt-0'>
+                    <div className="flex flex-col gap-2 border p-4 rounded-md">
+                      <label className="font-semibold">Hotel Policies</label>
+                      {policies.map((p, idx) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <Input
+                            placeholder="Policy Name"
+                            value={p.key}
+                            onChange={(e) => updatePolicyKey(idx, e.target.value)}
+                          />
+                          <Input
+                            placeholder="Policy Value"
+                            value={p.value}
+                            onChange={(e) => updatePolicyValue(idx, e.target.value)}
+                          />
+                          <Button
+                            size={'icon'}
+                            variant={"ghost"}
+                            onClick={() => removePolicy(idx)}
+                          >
+                            <Trash2 size={14} className="text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="button" onClick={addPolicy} className="mt-2">
+                        Add Policy
+                      </Button>
+                    </div>
+                  </TabsContent> */}
                 </div>
               </Tabs>
             </div>
@@ -839,9 +1700,16 @@ const handleSave = async () => {
                 <Button
                   type="submit"
                   onClick={handleSubmit}
-                  className="bg-[var(--primary)] text-white"
+                  className="bg-[var(--primary)] text-white cursor-pointer"
+                  disabled={loading}
                 >
-                  {mode === "edit" ? "Update" : "Submit"}
+                  {mode === "edit"
+                    ? loading
+                      ? "Updating..."
+                      : "Update"
+                    : loading
+                    ? "Adding.."
+                    : "Add Hotel"}
                 </Button>
               )}
             </div>

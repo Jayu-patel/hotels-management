@@ -440,7 +440,7 @@ export function BookingsManagement() {
                       </div>
                     </TableCell>
                     <TableCell>{booking.guest_count}</TableCell>
-                    <TableCell>{symbol}{currency == "usd" ? booking.total_amount.toLocaleString(): (booking.inr_amount).toLocaleString()}</TableCell>
+                    <TableCell>{symbol}{currency == "usd" ? booking.total_amount.toLocaleString(): (booking.inr_amount)?.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusColor(booking.status)}>
                         {booking.status}

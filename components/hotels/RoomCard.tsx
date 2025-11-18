@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useCurrency } from '@/contexts/currency-context';
+import { useSearchParams } from 'next/navigation';
 
 interface Room {
   id: string;
@@ -47,7 +48,11 @@ const amenityIcons: { [key: string]: React.ReactNode } = {
 
 export function RoomCard({ room, onSelect }: RoomCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const {currencyConverter, symbol} = useCurrency()
+  const {currencyConverter, symbol, getEffectivePrice} = useCurrency()
+
+  const searchParams = useSearchParams();
+  const checkIn = searchParams.get('checkIn') || '';
+  const checkOut = searchParams.get('checkOut') || '';
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -128,7 +133,11 @@ export function RoomCard({ room, onSelect }: RoomCardProps) {
           <div className="flex justify-between items-start mb-3">
             <div>
               <h3 className="text-xl mb-1">{room.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">{room.description}</p>
+              {/* <p className="text-sm text-gray-600 mb-2">{room.description}</p> */}
+              <p 
+                className="prose prose-sm text-gray-600 mt-1 max-w-none [&_ol]:list-disc [&_ol_li]:ml-4"
+                dangerouslySetInnerHTML={{ __html: room.description }}
+              ></p>
             </div>
             
             {!room.available && (
@@ -166,7 +175,8 @@ export function RoomCard({ room, onSelect }: RoomCardProps) {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-2xl text-green-600">
-                  {symbol}{(currencyConverter(room.pricePerNight)).toLocaleString()}
+                  {/* {symbol}{(currencyConverter(room.pricePerNight)).toLocaleString()} */}
+                  {symbol}{currencyConverter(getEffectivePrice(room, checkIn, checkOut)).toLocaleString()}
                 </span>
                 <span className="text-sm text-gray-600">/ night</span>
               </div>

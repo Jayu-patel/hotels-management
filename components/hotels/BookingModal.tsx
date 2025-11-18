@@ -15,6 +15,9 @@ import { toast } from 'react-toastify';
 import { checkRoomAvailability, createBooking } from '@/supabase/hotels';
 import axios from 'axios';
 import { useCurrency } from '@/contexts/currency-context';
+import { useRouter } from 'next/navigation';
+import { useHotels } from '@/contexts/hotels-context';
+import { CalendarRange } from '../calander-range';
 
 interface Room {
   id: string;
@@ -47,7 +50,15 @@ interface BookingModalProps {
   userId: string;
   onClose: () => void;
   onSubmit: (bookingData: any) => void;
-  dates: {from?: string, to?: string}
+  dates: {from?: string, to?: string};
+  roomChoice?: {
+    id?: string,
+    name?: string,
+    description?: string,
+    additional_price?: number,
+    type?: string
+  };
+  selectedGuest?: { adults: number, children: number, rooms: number }
 }
 
 interface GuestCount {
@@ -56,7 +67,9 @@ interface GuestCount {
   infants: number;
 }
 
-export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: BookingModalProps) {
+export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates, roomChoice, selectedGuest }: BookingModalProps) {
+  const router = useRouter();
+  const {setBookingData} = useHotels()
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
@@ -69,7 +82,7 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: 
   });
   
   const [rooms, setRooms] = useState('1');
-  const { currency, symbol, rate, currencyConverter } = useCurrency();
+  const { currency, symbol, rate, currencyConverter, getEffectivePrice } = useCurrency();
 
   const [loading, setLoading] = useState(false)
   const [bookLoading, setBookLoading] = useState(false)
@@ -82,7 +95,15 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: 
         to: new Date(dates.to)
       })
     }
+
   },[dates])
+
+  useEffect(()=>{
+    if(selectedGuest){
+      setGuestCount((prev)=>({...prev, adults: selectedGuest?.adults, children: selectedGuest?.children}))
+      setRooms(String(selectedGuest?.rooms))
+    }
+  },[selectedGuest])
 
   const calculateNights = () => {
     if (dateRange?.from && dateRange?.to) {
@@ -94,7 +115,8 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: 
 
   const nights = calculateNights();
 
-  let subtotal = nights * room.pricePerNight * Number(rooms);
+  // let subtotal = nights * room.pricePerNight * Number(rooms);
+  let subtotal = nights *((getEffectivePrice(room, dateRange?.from?.toISOString().split('T')[0], dateRange?.to?.toISOString().split('T')[0])) + (roomChoice?.additional_price ?? 0)) * Number(rooms);
   let taxes = subtotal * 0;
   let serviceFee = subtotal * 0.05;
   let total = Math.floor(subtotal + taxes + serviceFee)
@@ -139,13 +161,14 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: 
         children: guestCount.children,
         infants: guestCount.infants,
         inr_amount: Math.floor(dollorPrice * rate),
-        currency
+        currency,
+        option_id: roomChoice?.id
       });
 
       if(res.status == 200){
         const data = res.data;
         if (data.url) window.location.href = data.url;
-        toast.success("Room booked successfully!")
+        toast.success("Room is selected for booking")
         onClose()
       }
       else{
@@ -171,49 +194,72 @@ export function BookingModal({ room, hotel, userId, onClose, onSubmit, dates }: 
     });
   };
 
+  const handleSubmit2=(e: React.FormEvent)=>{
+    e.preventDefault();
+    const bookingData = {
+      room_name: room.name,
+      hotel_name: hotel.name,
+      room_id: room.id,
+      hotel_id: hotel.id,
+      user_id: userId,
+      check_in: dateRange?.from ? dateRange.from.toISOString() : "",
+      check_out: dateRange?.to ? dateRange.to.toISOString() : "",
+      room_booked: Number(rooms),
+      guest_count: Number(guests),
+      total_amount: dollorPrice,
+      adults: guestCount.adults,
+      children: guestCount.children,
+      infants: guestCount.infants,
+      inr_amount: Math.floor(dollorPrice * rate),
+      currency,
+    };
+
+    setBookingData(bookingData)
+    router.push(`/checkout`);
+  }
+
   const isFormValid = dateRange?.from && dateRange?.to && guests && nights > 0 && !guestError;
 
   // derive date strings from dateRange
-const checkIn = dateRange?.from
-  ? dateRange.from.toISOString().split("T")[0]
-  : "";
-const checkOut = dateRange?.to
-  ? dateRange.to.toISOString().split("T")[0]
-  : "";
+  const checkIn = dateRange?.from
+    ? dateRange.from.toISOString().split("T")[0]
+    : "";
+  const checkOut = dateRange?.to
+    ? dateRange.to.toISOString().split("T")[0]
+    : "";
 
-useEffect(() => {
-  const fetchAvailability = async () => {
-    if (!room?.id || !checkIn || !checkOut || Number(rooms) < 1) {
-      setAvailableRooms(null); // reset if input incomplete
-      return;
-    }
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!room?.id || !checkIn || !checkOut || Number(rooms) < 1) {
+        setAvailableRooms(null); // reset if input incomplete
+        return;
+      }
 
-    setLoading(true);
-    try {
-      const available = await checkRoomAvailability(
-        room.id,
-        checkIn,
-        checkOut
-      );
-      setAvailableRooms(available);
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-    setLoading(false);
-  };
+      setLoading(true);
+      try {
+        const available = await checkRoomAvailability(
+          room.id,
+          checkIn,
+          checkOut
+        );
+        setAvailableRooms(available);
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+      setLoading(false);
+    };
 
-  fetchAvailability();
-}, [room?.id, checkIn, checkOut, rooms]);
+    fetchAvailability();
+  }, [room?.id, checkIn, checkOut, rooms]);
 
-useEffect(()=>{
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  useEffect(()=>{
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  let nextDate = new Date(today);
-  nextDate.setDate(today.getDate() + 6);
+    let nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + 6);
 
-},[dateRange])
-
+  },[dateRange])
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -314,21 +360,23 @@ useEffect(()=>{
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
-                        initialFocus
                         mode="range"
                         defaultMonth={dateRange?.from}
                         selected={dateRange}
                         onSelect={setDateRange}
                         numberOfMonths={2}
-                        // disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
                         disabled={(date) => {
                           const today = new Date();
-                          today.setHours(0, 0, 0, 0); // reset time → 00:00:00
+                          today.setHours(0, 0, 0, 0);
 
                           return date < today || date < new Date("1900-01-01");
                         }}
 
                       />
+                      {/* <CalendarRange
+                        dates={dateRange}
+                        setDates={setDateRange}
+                      /> */}
                     </PopoverContent>
                   </Popover>
                   {dateRange?.from && dateRange?.to && (
@@ -473,23 +521,19 @@ useEffect(()=>{
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>
-                            {symbol}{(currencyConverter(room.pricePerNight)).toLocaleString()} × {rooms} room{Number(rooms) > 1 ? 's' : ''} × {nights} night
+                            {symbol}{(currencyConverter(getEffectivePrice(room, checkIn, checkOut) + (roomChoice?.additional_price ?? 0))).toLocaleString()} × {rooms} room{Number(rooms) > 1 ? 's' : ''} × {nights} night
                             {nights > 1 ? 's' : ''}
                           </span>
-                          <span>{symbol}{subtotal.toFixed(2)}</span>
+                          <span>{symbol}{subtotal.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Service fee</span>
-                          <span>{symbol}{serviceFee.toFixed(2)}</span>
+                          <span>{symbol}{serviceFee.toLocaleString()}</span>
                         </div>
-                        {/* <div className="flex justify-between">
-                          <span>Taxes</span>
-                          <span>{symbol}{taxes.toFixed(2)}</span>
-                        </div> */}
                         <Separator />
                         <div className="flex justify-between text-lg">
                           <span>Total</span>
-                          <span>{symbol}{total.toFixed(2)}</span>
+                          <span>{symbol}{total.toLocaleString()}</span>
                         </div>
                       </div>
                     </CardContent>

@@ -77,7 +77,6 @@ function getIcon(key: string, value?: string) {
   if (k.includes("hotel") || k.includes("room")) return <Hotel size={16} className="text-indigo-500" />;
   if (k.includes("checkin") || k.includes("checkout") || k.includes("date")) return <CalendarDays size={16} className="text-green-500" />;
   if (k.includes("amount") || k.includes("currency")){
-        console.log(value)
         if(value && value[0] == "$") return <DollarSign size={16} className="text-amber-500" />;
         else return <IndianRupee size={16} className="text-amber-500" />;
   } 
