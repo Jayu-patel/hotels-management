@@ -121,3 +121,5 @@
     @apply bg-background text-foreground;
   }
 }
+
+.ql-tooltip { z-index: 9999; }

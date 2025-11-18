@@ -13,6 +13,9 @@ interface HotelsContextType {
   setLoading: (loading: boolean)=> void;
   fetchHotels: (params: FetchHotelsParams)=> Promise<{ count: number }>;
   getHotelRooms: (hotelId: string, searchStart?: string, searchEnd?: string)=> Promise<{rooms: any, name: string, range: { start: string, end: string }}>;
+  updateHotelFeatured: (id: string, featured: boolean) => void;
+  bookingData: any;
+  setBookingData: (booking: any)=> void;
 }
 
 type FetchHotelsParams = {
@@ -28,6 +31,7 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
   const [hotels, setHotels] = useState<any[]>([]);
   const [adminHotels, setAdminHotels] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useState<boolean>(false)
+  const [bookingData, setBookingData] = useState<any>({})
   const [loading, setLoading] = useState<boolean>(true)
 
   function getDefaultDateRange() {
@@ -54,7 +58,16 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
         review_count,
         status,
         country,
+        latitude,
+        longitude,
+        facilities,
+        policies,
         state,
+        featured,
+        check_in_time,
+        check_out_time,
+        phone,
+        email,
         images: hotel_images ( id, image_url, is_primary ),
         amenities: hotel_amenities ( amenity_id ( id, name ) )
       `, {count: "exact"})
@@ -89,6 +102,15 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
       rating: h.star_rating,
       status: h.status,
       description: h.description,
+      latitude: h.latitude,
+      longitude: h.longitude,
+      facilities: h.facilities,
+      policies: h.policies,
+      featured: h.featured,
+      check_in_time: h.check_in_time,
+      check_out_time: h.check_out_time,
+      email: h.email,
+      phone: h.phone,
       images: h.images?.map((img: any) => ({
         id: img.id,
         url: img.image_url,
@@ -157,6 +179,7 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
 
   //   return {rooms, name: hotelData.name}
   // }
+
   async function getHotelRooms(
     hotelId: string,
     searchStart?: string,
@@ -179,8 +202,10 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
         room_type,
         status,
         description,
+        policies,
         images: room_images(id, image_url, is_primary),
-        amenities: room_amenities(amenity_id ( id, name ))
+        amenities: room_amenities(amenity_id ( id, name )),
+        options: room_options(id, name, additional_price, type)
       `)
       .eq("hotel_id", hotelId)
       .order("created_at", { ascending: false });
@@ -267,6 +292,7 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
         capacity: room.capacity,
         price: room.price,
         description: room.description,
+        policies: room.policies,
         amenities:
           room.amenities?.map((a: any) => ({
             id: a.amenity_id.id,
@@ -282,11 +308,18 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
             url: img.image_url,
             is_primary: img.is_primary,
           })) || [],
+        options: room.options
       };
     });
 
     return { rooms, name: hotelData.name, range: { start: startDate, end: endDate } };
   }
+
+  const updateHotelFeatured = (id: string, featured: boolean) => {
+    setAdminHotels((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, featured } : h))
+    );
+  };
 
   return (
     <HotelsContext.Provider 
@@ -301,7 +334,10 @@ export function HotelsProvider({ children }: { children: ReactNode }) {
           loading,
           setLoading,
           fetchHotels,
-          getHotelRooms //here
+          getHotelRooms,
+          updateHotelFeatured,
+          bookingData,
+          setBookingData
         }
       }
     >

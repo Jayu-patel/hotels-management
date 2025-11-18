@@ -17,6 +17,7 @@ interface GetHotelsParams {
   selectedAmenities?: string[];
   sortBy?: string;
   priceRange?: number[];
+  selectedRatings?: number[];
 }
 
 export async function searchHotels({
@@ -26,6 +27,7 @@ export async function searchHotels({
   guestCount,
   page = 1,
   size = 10,
+  selectedRatings = []
 }: {
   destination: string;
   checkIn: string;
@@ -33,12 +35,32 @@ export async function searchHotels({
   guestCount: number;
   page?: number;
   size?: number;
+  selectedRatings?: number[]
 }) {
   const from = (page - 1) * size;
   const to = from + size - 1;
 
   // ✅ Step 1: Fetch hotels (with pagination & count)
-  const { data: hotels, error: hotelError, count } = await supabase
+  // const { data: hotels, error: hotelError, count } = await supabase
+  //   .from("hotels")
+  //   .select(
+  //     `
+  //       id,
+  //       name,
+  //       destination,
+  //       description,
+  //       address,
+  //       star_rating,
+  //       review_count,
+  //       hotel_images ( id, image_url, is_primary ),
+  //       hotel_amenities ( amenity_id ( id, name ) )
+  //     `,
+  //     { count: "exact" }
+  //   )
+  //   .or(`destination.ilike.%${destination}%,name.ilike.%${destination}%`)
+  //   .range(from, to);
+  
+  let query = supabase
     .from("hotels")
     .select(
       `
@@ -56,6 +78,54 @@ export async function searchHotels({
     )
     .or(`destination.ilike.%${destination}%,name.ilike.%${destination}%`)
     .range(from, to);
+  
+    if (selectedRatings?.length > 0) {
+      // const ratingRanges = selectedRatings.map((r) => {
+      //   switch (r) {
+      //     case 5:
+      //       return { min: 4.5, max: 5 };
+      //     case 4:
+      //       return { min: 4.0, max: 4.4 };
+      //     case 3:
+      //       return { min: 3.0, max: 3.9 };
+      //     case 2:
+      //       return { min: 2.0, max: 2.9 };
+      //     case 1:
+      //       return { min: 0, max: 1.9 };
+      //     default:
+      //       return null;
+      //   }
+      // }).filter(Boolean);
+      const ratingRanges = selectedRatings
+      .map((r) => {
+        switch (r) {
+          case 5:
+            return { min: 4.5, max: 5 };
+          case 4:
+            return { min: 3.9, max: 4.6 }; // overlap 4.5 with 5-star
+          case 3:
+            return { min: 2.9, max: 4 };
+          case 2:
+            return { min: 1.9, max: 2.9 }; // overlap 1.9 with 1-star
+          case 1:
+            return { min: 0, max: 1.9 };
+          default:
+            return null;
+        }
+      })
+      .filter(Boolean);
+
+      query = query.or(
+        ratingRanges
+          .map(
+            (r) =>
+              `and(star_rating.gte.${r?.min},star_rating.lte.${r?.max})`
+          )
+          .join(",")
+      );
+    }
+  
+  const { data: hotels, error: hotelError, count } = await query
 
   if (hotelError) throw hotelError;
   if (!hotels || hotels.length === 0) {
@@ -161,17 +231,46 @@ export async function getRoomsAvailability({
       hotel_id,
       images: room_images( id, image_url ),
       amenities: room_amenities( amenity_id ( id, name ) ),
-      bookings!left( room_booked, check_in, check_out )
+      bookings!left( room_booked, check_in, check_out, status ),
+      seasonal_slab_ids,
+      duration_slab_ids,
+      options: room_options(id, name, additional_price, type)
     `)
     .eq("hotel_id", hotelId);
 
   if (error) throw error;
 
-  // Step 2: Map and compute availability
+  const allSeasonalIds = roomsData?.flatMap((r: any) => r?.seasonal_slab_ids || []) || [];
+
+  const allDurationIds = roomsData?.flatMap((r: any) => r?.duration_slab_ids || []) || [];
+
+  let seasonalSlabs = [];
+  let durationSlabs = [];
+
+  if (allSeasonalIds.length) {
+    const { data, error } = await supabase
+      .from("price_slabs")
+      .select("*")
+      .in("id", allSeasonalIds.filter(Boolean));
+    if (error) throw error;
+    seasonalSlabs = data || [];
+  }
+
+  if (allDurationIds.length) {
+    const { data, error } = await supabase
+      .from("price_slabs")
+      .select("*")
+      .in("id", allDurationIds.filter(Boolean));
+    if (error) throw error;
+    durationSlabs = data || [];
+  }
+
   const rooms = (roomsData || []).map((room: any, i: number) => {
     const overlappingBookings =
       room.bookings?.filter(
-        (b: any) => 
+        (b: any) =>
+          b.status !== "Cancelled" &&
+          b.status !== "Checked Out" &&
           new Date(b.check_in) < new Date(checkOut) &&
           new Date(b.check_out) > new Date(checkIn)
       ) || [];
@@ -181,8 +280,13 @@ export async function getRoomsAvailability({
       0
     );
 
-    // Available if at least 1 room left AND capacity fits guests
-    const available = bookedCount < Number(room.count) && Number(room.capacity) >= guestCount;
+    // const available = bookedCount < Number(room.count) && Number(room.capacity) >= guestCount;
+
+    const totalAvailableCapacity = (Number(room.count) - bookedCount) * Number(room.capacity);
+    const available = totalAvailableCapacity >= guestCount;
+
+    const roomSeasonal = seasonalSlabs.filter((s) => room.seasonal_slab_ids?.includes(s.id)) || [];
+    const roomDuration =durationSlabs.filter((d) => room.duration_slab_ids?.includes(d.id)) || [];
 
     return {
       id: room.id,
@@ -195,6 +299,9 @@ export async function getRoomsAvailability({
       maxOccupancy: room.capacity,
       amenities: room.amenities?.map((a: any) => a.amenity_id.name) || [],
       available,
+      seasonalSlabs: roomSeasonal,
+      durationSlabs: roomDuration,
+      options: room.options
     };
   });
 
@@ -264,7 +371,8 @@ export async function getHotels({
   selectedAmenities = [],
   search,
   sortBy = "recommended",
-  priceRange
+  priceRange,
+  selectedRatings = []
 }: GetHotelsParams = {}): Promise<{ data: any[], totalPages: number, totalCount: number}> {
 
   // 1️⃣ Fetch all amenities dynamically
@@ -291,6 +399,35 @@ export async function getHotels({
     // ilike does partial match, % is wildcard
     query = query.or(
       `name.ilike.%${search}%,destination.ilike.%${search}%,address.ilike.%${search}%`
+    );
+  }
+
+  if (selectedRatings?.length > 0) {
+    const ratingRanges = selectedRatings.map((r) => {
+      switch (r) {
+        case 5:
+          return { min: 4.5, max: 5 };
+        case 4:
+          return { min: 4.0, max: 4.4 };
+        case 3:
+          return { min: 3.0, max: 3.9 };
+        case 2:
+          return { min: 2.0, max: 2.9 };
+        case 1:
+          return { min: 0, max: 1.9 };
+        default:
+          return null;
+      }
+    }).filter(Boolean);
+
+    // Build OR manually
+    query = query.or(
+      ratingRanges
+        .map(
+          (r) =>
+            `and(star_rating.gte.${r?.min},star_rating.lte.${r?.max})`
+        )
+        .join(",")
     );
   }
 

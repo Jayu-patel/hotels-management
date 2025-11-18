@@ -140,6 +140,7 @@ export async function getBookingsById(id: string){
     room_booked,
     status,
     total_amount,
+    inr_amount,
     user_id!inner(id, full_name, email),
     hotel_id!inner(id, name),
     rooms:room_id (id, name)
@@ -160,6 +161,7 @@ export async function getBookingsById(id: string){
     room_booked: data?.room_booked,
     status: data?.status,
     total_amount: data?.total_amount,
+    inr_amount: data?.inr_amount,
     users: data?.user_id,
     hotels: data?.hotel_id,
     rooms: data?.rooms,
